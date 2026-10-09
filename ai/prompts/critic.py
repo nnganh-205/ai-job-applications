@@ -1,0 +1,1 @@
+"""CV critic prompts placeholder."""

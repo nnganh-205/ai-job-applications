@@ -1,0 +1,1 @@
+"""CV generation prompts placeholder."""

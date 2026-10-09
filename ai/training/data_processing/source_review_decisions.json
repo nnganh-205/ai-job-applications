@@ -1,0 +1,688 @@
+[
+  {
+    "sample_id": "train_000002",
+    "recommendation": "retain_with_constraints",
+    "category": "masked_dates",
+    "reason": "Ngày chứa XXX là dữ kiện bị ẩn, không chứng minh kinh nghiệm bị bịa. Chức danh/công ty/nhiệm vụ vẫn rõ; giữ để học bảo toàn dữ kiện ẩn. Không đoán năm, trạng thái tốt nghiệp hoặc tính tổng số năm từ các mốc bị che.",
+    "evidence": {
+      "experience_dates": [
+        "05/XXX1 to 04/XXX2",
+        "03/2016 to 10/2018"
+      ],
+      "education_dates": [
+        "Expected in 08/XXX2",
+        "Expected in 10/2015"
+      ]
+    },
+    "record_sha256": "14e31fd0acbccd9fa2e9b142b0eb8fb753a58f6d916015dfd08543f6fa0e3975",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000011",
+    "recommendation": "retain_with_constraints",
+    "category": "masked_dates",
+    "reason": "Ngày chứa XXX là dữ kiện bị ẩn, không chứng minh kinh nghiệm bị bịa. Chức danh/công ty/nhiệm vụ vẫn rõ; giữ để học bảo toàn dữ kiện ẩn. Không đoán năm, trạng thái tốt nghiệp hoặc tính tổng số năm từ các mốc bị che.",
+    "evidence": {
+      "experience_dates": [
+        "05/XXX1 to 04/XXX2",
+        "03/2016 to 10/2018"
+      ],
+      "education_dates": [
+        "Expected in 08/XXX2",
+        "Expected in 10/2015"
+      ]
+    },
+    "record_sha256": "e2d7cdb95b5a6d129f74e9a80a66e6ec81521bdbf01d5554d5c02ad7d8be64c0",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000012",
+    "recommendation": "exclude_until_repaired",
+    "category": "summary_inconsistent",
+    "reason": "Summary khẳng định Sales Associate/customer service/sales nhưng các vai trò và bullet thể hiện kỹ thuật hoặc lập trình. Không có căn cứ bán hàng trong phần kinh nghiệm; có dấu hiệu summary ghép sai. Cần sửa summary từ nguồn trước khi đưa mẫu trở lại.",
+    "evidence": {
+      "summary": "Highly motivated Sales Associate with extensive customer service and sales experience. Outgoing sales professional with track record of driving increased sales, improving buying experience and elevating company profile with target market.",
+      "experience_titles": [
+        "Electrical Design Engineer",
+        "Research Assistant",
+        "Product Engineering Intern"
+      ]
+    },
+    "record_sha256": "378becf2bee2e08a379f9df00d7798743bcad04ce5785db607c149ea349805b4",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000017",
+    "recommendation": "exclude_until_repaired",
+    "category": "summary_inconsistent",
+    "reason": "Summary khẳng định Sales Associate/customer service/sales nhưng các vai trò và bullet thể hiện kỹ thuật hoặc lập trình. Không có căn cứ bán hàng trong phần kinh nghiệm; có dấu hiệu summary ghép sai. Cần sửa summary từ nguồn trước khi đưa mẫu trở lại.",
+    "evidence": {
+      "summary": "Highly motivated Sales Associate with extensive customer service and sales experience. Outgoing sales professional with track record of driving increased sales, improving buying experience and elevating company profile with target market.",
+      "experience_titles": [
+        "Software Developer",
+        "Web Developer",
+        "Software Developer",
+        "Software Developer"
+      ]
+    },
+    "record_sha256": "37b4c2b6fa2975c2b18c1d921e9c51857f3d938f879936b6ffebac3a7e39b709",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000019",
+    "recommendation": "exclude_until_repaired",
+    "category": "summary_inconsistent",
+    "reason": "Summary khẳng định Sales Associate/customer service/sales nhưng các vai trò và bullet thể hiện kỹ thuật hoặc lập trình. Không có căn cứ bán hàng trong phần kinh nghiệm; có dấu hiệu summary ghép sai. Cần sửa summary từ nguồn trước khi đưa mẫu trở lại.",
+    "evidence": {
+      "summary": "Highly motivated Sales Associate with extensive customer service and sales experience. Outgoing sales professional with track record of driving increased sales, improving buying experience and elevating company profile with target market.",
+      "experience_titles": [
+        "Electrical Design Engineer",
+        "Research Assistant",
+        "Product Engineering Intern"
+      ]
+    },
+    "record_sha256": "096ba4d57840ffb4f262070ce4fec5b96f6df233899f5f025f207500804f0cb4",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000083",
+    "recommendation": "exclude_until_repaired",
+    "category": "ambiguous_experience_structure",
+    "reason": "Guidewire được đặt làm chức danh, công ty Company Not Specified và ngày null. Nhiệm vụ test automation có thể là công việc hoặc dự án, chưa có căn cứ xác định cấu trúc. Hai vai trò khác cùng 10/2012-Current chỉ là dấu hiệu cần xác minh, không tự kết luận sai. Tạm loại khỏi tập train chuẩn cho đến khi làm rõ/sửa cấu trúc.",
+    "evidence": {
+      "ambiguous_entry": {
+        "title": "Guidewire",
+        "company": "Company Not Specified",
+        "dates": null,
+        "bullet_points": [
+          "Validated test cases per analytic review of testing procedure lines.",
+          "Retrieved and interpreted User Stories from Business Analysts.",
+          "Developed reusable scripts by contributing to the Page Reference Library."
+        ]
+      }
+    },
+    "record_sha256": "9ed1c801bb02b64390fa040924c61ec6ba812fd55150fb5f84a1c721921060dc",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000106",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Thiếu ngày Big Data Engineer; còn chức danh, công ty và nhiệm vụ rõ. Summary 13+ năm chỉ là dữ kiện được nguồn khai báo, không thể kiểm chứng từ lịch sử rút gọn.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[0]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[0]"
+        }
+      ]
+    },
+    "record_sha256": "44d6b4c74c85768a7debf79bb67c0ea8cb07348f86c48260793502b550c59f16",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000113",
+    "recommendation": "retain_with_constraints",
+    "category": "masked_dates",
+    "reason": "Ngày chứa XXX là dữ kiện bị ẩn, không chứng minh kinh nghiệm bị bịa. Chức danh/công ty/nhiệm vụ vẫn rõ; giữ để học bảo toàn dữ kiện ẩn. Không đoán năm, trạng thái tốt nghiệp hoặc tính tổng số năm từ các mốc bị che.",
+    "evidence": {
+      "experience_dates": [
+        "05/XXX1 to 04/XXX2",
+        "03/2016 to 10/2018"
+      ],
+      "education_dates": [
+        "Expected in 08/XXX2",
+        "Expected in 10/2015"
+      ]
+    },
+    "record_sha256": "9ad2398263a841c9ac3207c42907f244e43acf9b0915e7d852297e18db906779",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000124",
+    "recommendation": "exclude_until_repaired",
+    "category": "ambiguous_experience_structure",
+    "reason": "Guidewire được đặt làm chức danh, công ty Company Not Specified và ngày null. Nhiệm vụ test automation có thể là công việc hoặc dự án, chưa có căn cứ xác định cấu trúc. Hai vai trò khác cùng 10/2012-Current chỉ là dấu hiệu cần xác minh, không tự kết luận sai. Tạm loại khỏi tập train chuẩn cho đến khi làm rõ/sửa cấu trúc.",
+    "evidence": {
+      "ambiguous_entry": {
+        "title": "Guidewire",
+        "company": "Company Not Specified",
+        "dates": null,
+        "bullet_points": [
+          "Validated test cases per analytic review of testing procedure lines.",
+          "Retrieved and interpreted User Stories from Business Analysts.",
+          "Developed reusable scripts by contributing to the Page Reference Library."
+        ]
+      }
+    },
+    "record_sha256": "ea1509e73487b5218c8c736c15bc483b62088dace64f6ac8f683a28dbec2aa62",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000208",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Kinh nghiệm kế toán nhất quán; thiếu ngày Axos Bank và ngày học ghi Expected in. Giữ nội dung chuyên môn, không suy đoán tốt nghiệp hoặc ngày làm việc.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[2]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[2]"
+        }
+      ]
+    },
+    "record_sha256": "db840803faffb063e5ef06e94f91bc1c472cb34ea9afefcf1ef7ca3c652a418d",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000219",
+    "recommendation": "exclude_until_repaired",
+    "category": "summary_inconsistent",
+    "reason": "Summary khẳng định Sales Associate/customer service/sales nhưng các vai trò và bullet thể hiện kỹ thuật hoặc lập trình. Không có căn cứ bán hàng trong phần kinh nghiệm; có dấu hiệu summary ghép sai. Cần sửa summary từ nguồn trước khi đưa mẫu trở lại.",
+    "evidence": {
+      "summary": "Highly motivated Sales Associate with extensive customer service and sales experience. Outgoing sales professional with track record of driving increased sales, improving buying experience and elevating company profile with target market.",
+      "experience_titles": [
+        "Lead Data/Database Architect",
+        "Sr Programmer/Systems Analyst",
+        "Senior Data Technical Solutions Architect"
+      ]
+    },
+    "record_sha256": "27f5dfb9b36abc77dcbd143ef88046bd28750eb8fe7c9394cc146b8479bdb8d8",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000221",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Cùng kiểu CV data warehouse: thiếu ngày một công việc, không phải thiếu toàn bộ kinh nghiệm. Không suy ra hoặc tăng số năm từ JD.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[0]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[0]"
+        }
+      ]
+    },
+    "record_sha256": "60be3b328d6997356551f942bffa1acf86036dd7be82e1bf1d5fdba456da4a0d",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000249",
+    "recommendation": "exclude_until_repaired",
+    "category": "corrupted_timeline",
+    "reason": "Cả 4 công việc đều ghi 01/1 to 01/1; không phải thời gian có thể dùng để học cách trình bày CV. Không đoán năm và không xác nhận 5+ năm từ timeline này. Có thể cứu nội dung dự án sau khi tạo lại đáp án được duyệt.",
+    "evidence": {
+      "experience_dates": [
+        "01/1 to 01/1",
+        "01/1 to 01/1",
+        "01/1 to 01/1",
+        "01/1 to 01/1"
+      ],
+      "summary": "To obtain a challenging position in the field of computer science and to apply my analytical and technical skill sets to practice 5+ Years of experience in the field of Software development and testing."
+    },
+    "record_sha256": "69ee3e7f4b4b8349e67387cefe79fbcfddefbccbb7c10196d3e54f65b10f9b37",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000254",
+    "recommendation": "retain_with_constraints",
+    "category": "masked_dates",
+    "reason": "Ngày chứa XXX là dữ kiện bị ẩn, không chứng minh kinh nghiệm bị bịa. Chức danh/công ty/nhiệm vụ vẫn rõ; giữ để học bảo toàn dữ kiện ẩn. Không đoán năm, trạng thái tốt nghiệp hoặc tính tổng số năm từ các mốc bị che.",
+    "evidence": {
+      "experience_dates": [
+        "03/XXX7 - Present",
+        "02/XXX6 - 03/XXX7"
+      ],
+      "education_dates": [
+        "Expected in Dec XXX5"
+      ]
+    },
+    "record_sha256": "c6b98675a2f879a721078d5c3fa2d8f1a3edfd27f0fc760db9ce2e6aa9fe8ce2",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000268",
+    "recommendation": "retain_with_constraints",
+    "category": "missing_optional_leadership_metadata",
+    "reason": "Unknown chỉ nằm ở tổ chức/ngày leadership; hai công việc chính có công ty và ngày cụ thể. Không loại toàn CV vì metadata phụ thiếu; giữ nguyên unknown hoặc chuẩn hóa đồng nhất cả input/output sang null, không sáng tạo tổ chức/ngày.",
+    "evidence": {
+      "leadership": [
+        {
+          "role": "Safety Champion of Women Safety Initiative",
+          "organization": "Unknown",
+          "dates": "2015"
+        }
+      ]
+    },
+    "record_sha256": "1b310511d3374b56da0a71619171ad1a6150f6e71b4d5d035c7cffd4c145e777",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000281",
+    "recommendation": "retain_with_constraints",
+    "category": "missing_optional_leadership_metadata",
+    "reason": "Unknown chỉ nằm ở tổ chức/ngày leadership; hai công việc chính có công ty và ngày cụ thể. Không loại toàn CV vì metadata phụ thiếu; giữ nguyên unknown hoặc chuẩn hóa đồng nhất cả input/output sang null, không sáng tạo tổ chức/ngày.",
+    "evidence": {
+      "leadership": [
+        {
+          "role": "Safety Champion of Women safety initiative",
+          "organization": "unknown",
+          "dates": "2015"
+        },
+        {
+          "role": "Team Leader",
+          "organization": "unknown",
+          "dates": "unknown"
+        }
+      ]
+    },
+    "record_sha256": "287c5bb0baafcf448ff0b5c23cf16cd2da0b37423f11270c0afcb1bb37989b45",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000314",
+    "recommendation": "retain_with_constraints",
+    "category": "missing_optional_leadership_metadata",
+    "reason": "Unknown chỉ nằm ở tổ chức/ngày leadership; hai công việc chính có công ty và ngày cụ thể. Không loại toàn CV vì metadata phụ thiếu; giữ nguyên unknown hoặc chuẩn hóa đồng nhất cả input/output sang null, không sáng tạo tổ chức/ngày.",
+    "evidence": {
+      "leadership": [
+        {
+          "role": "Safety Champion of Women safety initiative",
+          "organization": "unknown",
+          "dates": "2015"
+        }
+      ]
+    },
+    "record_sha256": "5fe40e9ad54045f524f9ff74c571b95e91b8668733901e945ee67a569184dcc9",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000359",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Data Engineer ở đây là công việc giếng khoan/geology, không phải data engineering phần mềm. Thiếu ngày một việc nhưng mô tả có thời lượng 6 tháng; không tự chuyển ngành hoặc tính tổng thời gian chồng lấn.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[2]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[2]"
+        }
+      ]
+    },
+    "record_sha256": "ab659cc7193fbcf36f1be5360ff853987dd0330c02a8e099d71bae9ea5d616c7",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000361",
+    "recommendation": "retain_with_constraints",
+    "category": "missing_optional_leadership_metadata",
+    "reason": "Unknown chỉ nằm ở tổ chức/ngày leadership; hai công việc chính có công ty và ngày cụ thể. Không loại toàn CV vì metadata phụ thiếu; giữ nguyên unknown hoặc chuẩn hóa đồng nhất cả input/output sang null, không sáng tạo tổ chức/ngày.",
+    "evidence": {
+      "leadership": [
+        {
+          "role": "Safety Champion of Women safety initiative",
+          "organization": "unknown",
+          "dates": "2015"
+        },
+        {
+          "role": "Team Leader",
+          "organization": "unknown",
+          "dates": "unknown"
+        }
+      ]
+    },
+    "record_sha256": "b75a438d40319b5baae438ac3cc109b41f1dc52fb9471f19b45963c378b5c094",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000389",
+    "recommendation": "exclude_until_repaired",
+    "category": "corrupted_timeline",
+    "reason": "Cả 4 công việc đều ghi 01/1 to 01/1; không phải thời gian có thể dùng để học cách trình bày CV. Không đoán năm và không xác nhận 5+ năm từ timeline này. Có thể cứu nội dung dự án sau khi tạo lại đáp án được duyệt.",
+    "evidence": {
+      "experience_dates": [
+        "01/1 to 01/1",
+        "01/1 to 01/1",
+        "01/1 to 01/1",
+        "01/1 to 01/1"
+      ],
+      "summary": "To obtain a challenging position in the field of computer science and to apply my analytical and technical skill sets to practice 5+ Years of experience in the field of Software development and testing."
+    },
+    "record_sha256": "1f602f835d6e811ba19c16a830fd803950b6b7790fa49b0a2f255ba291e123ae",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000395",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Kinh nghiệm xây dựng/civil engineering nhất quán; một số công ty/ngày chưa cung cấp. Civil Engineering nằm sai nhóm languages cần chỉnh schema theo ngữ nghĩa trước train.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[3]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[4]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[3]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[4]"
+        }
+      ]
+    },
+    "record_sha256": "1dba7e8f3b9a4c6d7d7baff895ace8a4c3438e30178ac697efa80bcd2cac2be9",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000396",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Kinh nghiệm kế toán nhất quán, thiếu công ty đầu và ngày kết thúc ghi 02/2015 -. Không diễn giải dấu gạch trống thành Present hoặc lấy công ty từ JD.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[0]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[0]"
+        }
+      ]
+    },
+    "record_sha256": "92015d44fb4fd89c828c17d7feeb52ea38abf9f1fe1de5211bf3d77bb17a8837",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000404",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Mô tả automation/power systems có nội dung chuyên môn nhưng toàn bộ lịch sử thiếu ngày, nhiều công ty/trường là placeholder. Chỉ nên giữ như tình huống CV thiếu dữ kiện, không dùng làm mẫu chuẩn đầy đủ; giữ MS 25% Completed, không coi là đã tốt nghiệp.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[0]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[1]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[2]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[3]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[0]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[1]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[2]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[3]"
+        }
+      ]
+    },
+    "record_sha256": "dff99ead64f574fab7bcdad124408dc7f57d53ba67fd695461c428f3ccc0f098",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000424",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Lịch sử software architecture nhất quán. Unknown nằm ở vài mục học/chứng chỉ; có tên khóa học hoặc đơn vị còn lại. Không tự đặt tên bằng/chứng chỉ hoặc nơi cấp.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "masked_or_unknown_values",
+          "path": "original_cv"
+        },
+        {
+          "code": "masked_or_unknown_values",
+          "path": "target_cv"
+        }
+      ]
+    },
+    "record_sha256": "3632be7efe67358a88c53ce1248745ca6adef7b89582f9c00f2ee666c38134cc",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000466",
+    "recommendation": "retain_with_constraints",
+    "category": "masked_dates",
+    "reason": "Ngày chứa XXX là dữ kiện bị ẩn, không chứng minh kinh nghiệm bị bịa. Chức danh/công ty/nhiệm vụ vẫn rõ; giữ để học bảo toàn dữ kiện ẩn. Không đoán năm, trạng thái tốt nghiệp hoặc tính tổng số năm từ các mốc bị che.",
+    "evidence": {
+      "experience_dates": [
+        "05/XXX1 to 04/XXX2",
+        "03/2016 to 10/2018"
+      ],
+      "education_dates": [
+        "Expected in 08/XXX2",
+        "Expected in 10/2015"
+      ]
+    },
+    "record_sha256": "f07f78170b15472ecda04099cb6f1e4c6a4ff8353643ef2ce6f143fe04ab5135",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "train_000468",
+    "recommendation": "exclude_until_repaired",
+    "category": "summary_inconsistent",
+    "reason": "Summary khẳng định Sales Associate/customer service/sales nhưng các vai trò và bullet thể hiện kỹ thuật hoặc lập trình. Không có căn cứ bán hàng trong phần kinh nghiệm; có dấu hiệu summary ghép sai. Cần sửa summary từ nguồn trước khi đưa mẫu trở lại.",
+    "evidence": {
+      "summary": "Highly motivated Sales Associate with extensive customer service and sales experience. Outgoing sales professional with track record of driving increased sales, improving buying experience and elevating company profile with target market.",
+      "experience_titles": [
+        "Software Developer",
+        "Web Developer",
+        "Software Developer",
+        "Software Developer"
+      ]
+    },
+    "record_sha256": "2cb976f2f37966d7967fa22fc6ba55ddb6498472cacc8994a6973b3b222e3ff6",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "validation_000014",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Kinh nghiệm phần mềm/QA có mô tả cụ thể; Unknown ở công ty và XXXcenter là tên bị che. Giữ nguyên phần che, không đoán tên sản phẩm/công ty; các năm summary không tự tính lại.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "masked_or_unknown_values",
+          "path": "original_cv"
+        },
+        {
+          "code": "masked_or_unknown_values",
+          "path": "target_cv"
+        }
+      ]
+    },
+    "record_sha256": "e5bc205a027a1499d65bba42f45d962161617ee65c69928d335e5bb9e83b314e",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "validation_000019",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "CV phần mềm/QA tương tự validation_000014; phần che tên sản phẩm và công ty không làm mất nhiệm vụ kỹ thuật. Giữ như mẫu có dữ kiện ẩn, không đoán danh tính.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "masked_or_unknown_values",
+          "path": "original_cv"
+        },
+        {
+          "code": "masked_or_unknown_values",
+          "path": "target_cv"
+        }
+      ]
+    },
+    "record_sha256": "d2e9ee56fbff343758e77acea1f4807590e9bfc0bf8cde9486c5917f0a861af0",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "validation_000031",
+    "recommendation": "retain_with_constraints",
+    "category": "false_positive",
+    "reason": "Cảnh báo sai: unknown xuất hiện trong câu illustrating previously unknown insights, nghĩa là khám phá mới, không phải giá trị thiếu. Lịch sử data analysis/BI có nhiệm vụ cụ thể; overlap thời gian có thể là internship song song, không tự loại.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "masked_or_unknown_values",
+          "path": "original_cv"
+        },
+        {
+          "code": "masked_or_unknown_values",
+          "path": "target_cv"
+        }
+      ]
+    },
+    "record_sha256": "b4086e29dd547ac01d702baa11ddd6fd9dacf646e90033144f578de897383c15",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "validation_000056",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Kinh nghiệm civil/construction nhất quán, thiếu ngày Site Manager. Civil Engineering nằm ở languages cần sửa nhóm; không biến master Expected in thành đã tốt nghiệp.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[3]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[3]"
+        }
+      ]
+    },
+    "record_sha256": "40ff48ed96bc0d55ef573556405bb466590f7dace6f76977297a935aaf71f187",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "test_000008",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "Kinh nghiệm kế toán có công ty/nhiệm vụ rõ; ngày Axos Bank thiếu và ngày học chưa đầy đủ. Không điền ngày từ JD.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[2]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[2]"
+        }
+      ]
+    },
+    "record_sha256": "2edb321053833dd325d766fc86005d62cf6c3f128a0548a77354c27128b929dd",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "test_000024",
+    "recommendation": "exclude_until_repaired",
+    "category": "summary_inconsistent",
+    "reason": "Summary khẳng định Sales Associate/customer service/sales nhưng các vai trò và bullet thể hiện kỹ thuật hoặc lập trình. Không có căn cứ bán hàng trong phần kinh nghiệm; có dấu hiệu summary ghép sai. Cần sửa summary từ nguồn trước khi đưa mẫu trở lại.",
+    "evidence": {
+      "summary": "Highly motivated Sales Associate with extensive customer service and sales experience. Outgoing sales professional with track record of driving increased sales, improving buying experience and elevating company profile with target market.",
+      "experience_titles": [
+        "Electrical Design Engineer",
+        "Research Assistant",
+        "Product Engineering Intern"
+      ]
+    },
+    "record_sha256": "c11fdb9a86543a349b0cdb4cb7d6c089527eab2632ddb357703b07911ee100e1",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "test_000050",
+    "recommendation": "retain_with_constraints",
+    "category": "masked_dates",
+    "reason": "Ngày chứa XXX là dữ kiện bị ẩn, không chứng minh kinh nghiệm bị bịa. Chức danh/công ty/nhiệm vụ vẫn rõ; giữ để học bảo toàn dữ kiện ẩn. Không đoán năm, trạng thái tốt nghiệp hoặc tính tổng số năm từ các mốc bị che.",
+    "evidence": {
+      "experience_dates": [
+        "05/XXX1 to 04/XXX2",
+        "03/2016 to 10/2018"
+      ],
+      "education_dates": [
+        "Expected in 08/XXX2",
+        "Expected in 10/2015"
+      ]
+    },
+    "record_sha256": "8f40fffb736957336f7342348b29be53a7d1547c7dea2d7766c80520cef72a54",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "test_000054",
+    "recommendation": "retain_with_constraints",
+    "category": "incomplete_but_usable_source",
+    "reason": "CV data warehouse có nhiệm vụ và công ty cụ thể nhưng thiếu ngày Big Data Engineer; giữ giá trị thiếu, không xác nhận 13+ năm qua ngày tháng.",
+    "evidence": {
+      "original_flags": [
+        {
+          "code": "missing_experience_identity",
+          "path": "original_cv.experience[0]"
+        },
+        {
+          "code": "missing_experience_identity",
+          "path": "target_cv.experience[0]"
+        }
+      ]
+    },
+    "record_sha256": "150f20bb2830b473f0a99f0b17e07799c06e26d090df71413def79710c7600b9",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  },
+  {
+    "sample_id": "test_000057",
+    "recommendation": "exclude_until_repaired",
+    "category": "summary_inconsistent",
+    "reason": "Summary khẳng định Sales Associate/customer service/sales nhưng các vai trò và bullet thể hiện kỹ thuật hoặc lập trình. Không có căn cứ bán hàng trong phần kinh nghiệm; có dấu hiệu summary ghép sai. Cần sửa summary từ nguồn trước khi đưa mẫu trở lại.",
+    "evidence": {
+      "summary": "Highly motivated Sales Associate with extensive customer service and sales experience. Outgoing sales professional with track record of driving increased sales, improving buying experience and elevating company profile with target market.",
+      "experience_titles": [
+        "Software Developer",
+        "Web Developer",
+        "Software Developer",
+        "Software Developer"
+      ]
+    },
+    "record_sha256": "2a3333db7e0443d483c0fc145d2778269b5c7e6f19af5e2e9b744832638cb448",
+    "scope": "Source quality assessment of flagged samples only; not approval of rewriting quality or training readiness."
+  }
+]
