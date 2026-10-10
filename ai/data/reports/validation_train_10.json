@@ -1,0 +1,173 @@
+{
+  "summary": {
+    "split": "train",
+    "limit": 10,
+    "total_samples": 10,
+    "status_counts": {
+      "PASS": 0,
+      "REVIEW": 10,
+      "FAIL": 0
+    },
+    "json_valid_samples": 10,
+    "schema_valid_samples": 10,
+    "immutable_valid_samples": 10,
+    "template_summary_samples": 10,
+    "samples_with_unsupported_skills": 0,
+    "dataset_patterns": {
+      "exact_duplicate_samples": 0,
+      "same_cv_multiple_jd_groups": 2,
+      "same_cv_different_jd_same_output_pairs": 0,
+      "heuristic_near_duplicate_groups": 2,
+      "mean_original_target_similarity": 0.9184
+    },
+    "limitations": [
+      "PASS chỉ có nghĩa là các kiểm tra đã triển khai không phát hiện vấn đề.",
+      "Validator không chứng minh được một target hoàn toàn không có hallucination.",
+      "Exact text matching không nhận biết đầy đủ alias, phủ định hoặc nghĩa tương đương.",
+      "Summary và bullet viết lại cần người kiểm tra ngữ nghĩa trước khi dùng để train.",
+      "Similarity chỉ dùng để mô tả dữ liệu, không tự động kết luận chất lượng."
+    ]
+  },
+  "samples": [
+    {
+      "sample_id": "train_000026",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000079",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000092",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000135",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000192",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000393",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000401",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000053",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000094",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    },
+    {
+      "sample_id": "train_000120",
+      "split": "train",
+      "status": "REVIEW",
+      "reasons": [
+        "Summary dùng khuôn mẫu v1, cần cải thiện",
+        "Summary đã viết lại, cần người kiểm tra ý nghĩa và bằng chứng"
+      ],
+      "json_valid": true,
+      "schema_valid": true,
+      "immutable_valid": true,
+      "template_summary": true,
+      "unsupported_skills": []
+    }
+  ]
+}
