@@ -1,2 +1,9 @@
-datasets
-ipykernel
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+httpx
+beautifulsoup4
+pymupdf
+python-docx
+langgraph

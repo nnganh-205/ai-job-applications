@@ -21,3 +21,7 @@ output/cv/pdf/*
 !output/cv/pdf/.gitkeep
 output/cv/latex/*
 !output/cv/latex/.gitkeep
+backend/storage/master_profiles/*
+!backend/storage/master_profiles/.gitkeep
+backend/storage/jobs/*
+!backend/storage/jobs/.gitkeep
