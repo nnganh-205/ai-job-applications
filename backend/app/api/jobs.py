@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Path
 
 from backend.app.ai.graph.jd_workflow import run_jd_analysis
 from backend.app.ai.llm.ollama_client import (
@@ -12,6 +14,14 @@ from backend.app.db.job_repository import load_job_analysis, save_job_analysis
 
 
 router = APIRouter(prefix="/api/jobs", tags=["JD Analysis Agent"])
+
+
+@router.get("/{job_id}", response_model=JobAnalysisResponse)
+def get_job(job_id: Annotated[str, Path(pattern=r"^[A-Za-z0-9_-]{1,128}$")]) -> JobAnalysisResponse:
+    job = load_job_analysis(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy JD đã lưu")
+    return job
 
 
 @router.post("/analyze", response_model=JobAnalysisResponse)

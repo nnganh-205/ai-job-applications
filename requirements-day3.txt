@@ -1,0 +1,4 @@
+# Optional PostgreSQL runtime. Install only after the user's dependency approval.
+-r requirements.txt
+psycopg[binary,pool]==3.3.6
+langgraph-checkpoint-postgres==3.2.0

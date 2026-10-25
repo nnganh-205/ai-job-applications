@@ -247,7 +247,7 @@ class StorageAndGraphTests(unittest.TestCase):
         def fake_extract(_resume_text):
             return profile
 
-        def fake_save(thread_id, confirmed_profile):
+        def fake_save(thread_id, confirmed_profile, **metadata):
             saved[thread_id] = confirmed_profile
 
         with (

@@ -1,10 +1,16 @@
 from typing import TypedDict
 
-from langgraph.checkpoint.memory import MemorySaver
+from backend.app.db.checkpoints import get_checkpointer
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
-from backend.app.ai.agents.profile_agent import extract_profile, validate_against_source
+from backend.app.ai.agents.profile_agent import (
+    assign_profile_metadata,
+    build_source_evidence,
+    confirmation_evidence,
+    extract_profile,
+    validate_against_source,
+)
 from backend.app.schemas.profile import MasterProfile
 from backend.app.services.document_reader import read_cv
 from backend.app.db.profile_repository import save_master_profile
@@ -18,6 +24,7 @@ class ProfileState(TypedDict, total=False):
     profile: dict
     warnings: list[str]
     status: str
+    evidence: list[dict]
 
 
 def parse_cv_node(state: ProfileState) -> ProfileState:
@@ -32,19 +39,26 @@ def extract_profile_node(state: ProfileState) -> ProfileState:
 def validate_profile_node(state: ProfileState) -> ProfileState:
     profile = MasterProfile.model_validate(state["profile"])
     warnings = validate_against_source(profile, state["resume_text"])
-    return {"warnings": warnings, "status": "pending_confirmation"}
+    evidence = build_source_evidence(profile, state["resume_text"], state["thread_id"])
+    return {"warnings": warnings, "evidence": [item.model_dump() for item in evidence], "status": "pending_confirmation"}
 
 
 def human_confirmation_node(state: ProfileState) -> ProfileState:
     # Graph dừng tại đây; API confirm sẽ resume bằng profile người dùng đã sửa.
-    confirmed_profile = interrupt({"profile": state["profile"], "warnings": state["warnings"]})
-    profile = MasterProfile.model_validate(confirmed_profile)
-    return {"profile": profile.model_dump(), "status": "confirmed"}
+    confirmed_profile = interrupt({"profile": state["profile"], "warnings": state["warnings"], "evidence": state.get("evidence", [])})
+    profile = assign_profile_metadata(MasterProfile.model_validate(confirmed_profile), preserve_ids=True)
+    evidence = confirmation_evidence(profile, state["resume_text"], state["thread_id"])
+    warnings = validate_against_source(profile, state["resume_text"])
+    return {"profile": profile.model_dump(), "evidence": [item.model_dump() for item in evidence], "warnings": warnings, "status": "confirmed"}
 
 
 def save_profile_node(state: ProfileState) -> ProfileState:
     # thread_id được LangGraph dùng để resume và được API đưa vào state khi xác nhận.
-    save_master_profile(state["thread_id"], MasterProfile.model_validate(state["profile"]))
+    save_master_profile(
+        state["thread_id"], MasterProfile.model_validate(state["profile"]),
+        evidence=state.get("evidence", []), warnings=state.get("warnings", []),
+        source_text=state["resume_text"], source_filename=state["filename"],
+    )
     return {"status": "confirmed"}
 
 
@@ -61,7 +75,7 @@ def build_profile_graph():
     builder.add_edge("validate_profile", "human_confirmation")
     builder.add_edge("human_confirmation", "save_profile")
     builder.add_edge("save_profile", END)
-    return builder.compile(checkpointer=MemorySaver())
+    return builder.compile(checkpointer=get_checkpointer())
 
 
 profile_graph = build_profile_graph()

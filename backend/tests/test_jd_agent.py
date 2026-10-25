@@ -72,7 +72,7 @@ class JobFetcherTests(unittest.TestCase):
             "@type": "JobPosting",
             "title": "Backend Developer",
             "hiringOrganization": {"name": "ABC"},
-            "description": "<p>Python is required.</p>",
+            "description": "<p>Python is required. Build backend APIs.</p>",
         }
         html = f'<script type="application/ld+json">{json.dumps(job)}</script>'
         text = extract_job_text(html)
@@ -84,7 +84,7 @@ class JobFetcherTests(unittest.TestCase):
         text = extract_job_text(html)
         self.assertIn("Required: SQL and Excel.", text)
 
-    @patch("backend.app.services.job_fetcher.validate_public_url")
+    @patch("backend.app.services.job_fetcher.validate_public_url", return_value=["93.184.216.34"])
     def test_fetch_job_url(self, _mock_validate):
         transport = httpx.MockTransport(
             lambda request: httpx.Response(
@@ -99,7 +99,7 @@ class JobFetcherTests(unittest.TestCase):
         self.assertIn("Testing experience", text)
         self.assertEqual(final_url, "https://jobs.example.com/qa")
 
-    @patch("backend.app.services.job_fetcher.validate_public_url")
+    @patch("backend.app.services.job_fetcher.validate_public_url", return_value=["93.184.216.34"])
     def test_unreachable_page(self, _mock_validate):
         def fail(request):
             raise httpx.ConnectError("failed", request=request)

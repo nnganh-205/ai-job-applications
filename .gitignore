@@ -25,3 +25,10 @@ backend/storage/master_profiles/*
 !backend/storage/master_profiles/.gitkeep
 backend/storage/jobs/*
 !backend/storage/jobs/.gitkeep
+
+# Private runtime documents and local verification artifacts.
+data/documents/cv/
+output/evaluation/
+frontend/.vite/
+backend/storage/matches/
+backend/storage/workflows/

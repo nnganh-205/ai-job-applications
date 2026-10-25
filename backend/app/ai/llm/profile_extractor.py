@@ -27,7 +27,7 @@ def request_profile(resume_text: str, correction: str | None = None) -> MasterPr
     ]
     if correction:
         messages.append({"role": "user", "content": correction})
-    return request_structured(messages, MasterProfile)
+    return request_structured(messages, MasterProfile, task="profile")
 
 
 def extract_profile_with_retry(resume_text: str) -> MasterProfile:
@@ -59,6 +59,7 @@ Resume:
     result = request_structured(
         [{"role": "user", "content": prompt}],
         JobTitleResult,
+        task="profile",
     )
     return {item.experience_index: item.job_title for item in result.items}
 
