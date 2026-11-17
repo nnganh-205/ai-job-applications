@@ -5,8 +5,8 @@ from uuid import uuid4
 
 from langgraph.types import Command
 
-from backend.app.ai.graph.profile_chat_workflow import chat_graph
-from backend.app.ai.graph.profile_update_workflow import update_graph
+from ai.graph.profile_chat_workflow import chat_graph
+from ai.graph.profile_update_workflow import update_graph
 from backend.app.db import database, profile_repository, workflow_repository as records
 from backend.app.db.profile_revision_repository import current_revision, root_id, RevisionConflict
 from backend.app.schemas.profile_update import SessionAction, SessionView, UpdateStart
@@ -39,7 +39,16 @@ def view_session(session_id: str) -> SessionView:
                        persistent_checkpoints=database.enabled())
 
 
-def start_update(request: UpdateStart) -> SessionView:
+def start_update(request: UpdateStart, session_id=None) -> SessionView:
+    if session_id and records.get("sessions",session_id):
+        existing=view_session(session_id)
+        if existing.profile_id!=request.profile_id or existing.posting_id!=request.posting_id:raise RevisionConflict("Phiên thuộc hồ sơ/công việc khác")
+        graph,config=graph_for(session_id)
+        state=graph.get_state(config)
+        if state.next and existing.status=='running':
+            graph.invoke(None,config)
+            return view_session(session_id)
+        return existing
     if current_revision(request.profile_id) != request.profile_id:
         raise RevisionConflict("Đây là revision cũ. Chọn hồ sơ mới nhất trước khi cập nhật.")
     result = evaluate_job(request.posting_id, request.profile_id)
@@ -57,7 +66,7 @@ def start_update(request: UpdateStart) -> SessionView:
                 continue
             if records.answer_for(root, target) is None:
                 queue.append(target)
-    session_id = uuid4().hex
+    session_id = session_id or uuid4().hex
     records.put("sessions", session_id, {"mode": "update"})
     state = {"session_id": session_id, "mode": "update", "profile_id": request.profile_id,
              "root_id": root, "posting_id": request.posting_id, "queue": queue[:5], "index": 0,

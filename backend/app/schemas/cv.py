@@ -1,8 +1,9 @@
+from backend.app.schemas.templates import TemplateID
 """Renderer-independent CV contracts, shared with training and frontend."""
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from backend.app.schemas.profile import Contact, StrictModel
 
@@ -55,16 +56,23 @@ class CVPlan(StrictModel):
 
 
 class CVStart(StrictModel):
-    profile_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
+    profile_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,128}$")
+    cv_id: str | None = Field(default=None, pattern=r"^cv_[a-f0-9]{32}$")
     posting_id: str | None = Field(default=None, pattern=r"^posting_[a-f0-9]{24}$")
     mode: Literal["generate", "review"] = "generate"
     language: Literal["vi", "en"] = "en"
 
 
+    @model_validator(mode="after")
+    def one_source(self):
+        if bool(self.profile_id)==bool(self.cv_id):raise ValueError("Chọn một hồ sơ hoặc CV version")
+        return self
+
+
 class CVApproval(StrictModel):
     decision: Literal["approve", "reject"]
     document: CVDocument | None = None
-    template: Literal["ats", "classic"] = "ats"
+    template: TemplateID = "ats"
 
 
 class CVSession(StrictModel):
@@ -74,4 +82,5 @@ class CVSession(StrictModel):
     review: CVReview
     warnings: list[str]
     cv_id: str | None = None
-    template: Literal["ats", "classic"] = "ats"
+    prompt_version: str | None = None
+    template: TemplateID = "ats"

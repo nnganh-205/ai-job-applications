@@ -1,0 +1,415 @@
+/* Only the laptop outro. Dimensions scale together through container units. */
+.zen-laptop-stage {
+  --laptop-scale: 1;
+  position: relative;
+  margin-top: 70px;
+  height: calc(1800px * var(--laptop-scale));
+  background: linear-gradient(180deg, #9987f6, #c9bdfb 20%, #fff 44%);
+  overflow: clip;
+  isolation: isolate;
+}
+.zen-laptop-scroll-track {
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(750px * var(--laptop-scale));
+  pointer-events: none;
+}
+.zen-laptop {
+  container-type: inline-size;
+  position: absolute;
+  top: calc(120px * var(--laptop-scale));
+  left: 50%;
+  width: 512px;
+  transform: translateX(-50%) scale(var(--laptop-scale));
+  transform-origin: center top;
+  z-index: 2;
+}
+.zen-laptop-lid {
+  perspective: 800px;
+  height: 37.5cqw;
+  position: relative;
+  z-index: 2;
+}
+.zen-laptop-screen {
+  position: absolute;
+  inset: 0;
+  border: 1.2cqw solid #060608;
+  border-bottom-width: 2.4cqw;
+  border-radius: 2.2cqw 2.2cqw 0.9cqw 0.9cqw;
+  background: #0c0e1d;
+  box-shadow:
+    0 0 0 1px #45424b,
+    inset 0 0 0 1px #272330;
+  overflow: hidden;
+  transform: perspective(800px) rotateX(-25deg);
+  transform-origin: center bottom;
+}
+/* One sheet moves continuously from the editor to the hands. No crossfade. */
+/* Start in exactly the same 512 × 192 plane as the editor screen. */
+.zen-laptop-flying-cv {
+  position: absolute;
+  inset: 0;
+  border-radius: 2.2cqw 2.2cqw 0.9cqw 0.9cqw;
+  transform-origin: center bottom;
+  transform: translateX(var(--cv-x, 0px)) translateY(var(--cv-y, 0px))
+    perspective(800px) scale(var(--cv-scale, 1))
+    rotateX(var(--cv-rotate, -25deg));
+  clip-path: inset(
+    calc(6px + var(--cv-clip, 0px)) calc(6px + var(--cv-clip, 0px))
+      calc(12px + var(--cv-clip, 0px))
+  );
+  will-change: transform, clip-path;
+  pointer-events: none;
+}
+.zen-laptop-paper-cv {
+  position: absolute;
+  left: 24px;
+  top: 64px;
+  display: block;
+  width: 200px;
+  height: auto;
+  border-radius: 2px;
+  box-shadow: 0 5px 18px #1d416b18;
+}
+.zen-laptop-camera {
+  position: absolute;
+  top: -0.7cqw;
+  left: calc(50% - 0.25cqw);
+  width: 0.5cqw;
+  height: 0.5cqw;
+  border-radius: 50%;
+  background: #343343;
+  box-shadow: 0 0 0.4cqw #627292;
+  z-index: 3;
+}
+.zen-laptop-app {
+  height: 100%;
+  color: #a9a5bc;
+  overflow: hidden;
+  background: #0f1121;
+}
+.zen-laptop-app-bar {
+  height: 5.2cqw;
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  padding: 0 1.5cqw;
+  border-bottom: 1px solid #ffffff12;
+  font-size: 1.2cqw;
+}
+.zen-laptop-app-bar > strong {
+  display: flex;
+  align-items: center;
+  gap: 0.6cqw;
+  color: #eee6ff;
+  font-size: 1.7cqw;
+}
+.zen-laptop-app-bar .icon {
+  width: 1.8cqw;
+  height: 1.8cqw;
+  color: #ae8bf5;
+}
+.zen-laptop-avatar {
+  margin-left: auto;
+  width: 2.2cqw;
+  height: 2.2cqw;
+  display: grid;
+  place-items: center;
+  background: #b098cb;
+  border-radius: 50%;
+  color: white;
+  font-size: 1cqw;
+}
+.zen-laptop-app-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.7cqw;
+  height: 5.5cqw;
+  padding: 0 1.5cqw;
+  border-bottom: 1px solid #ffffff0b;
+  font-size: 1.3cqw;
+}
+.zen-laptop-app-tools > span:not(:last-child) {
+  padding: 0.35cqw 0.8cqw;
+  border: 1px solid #ffffff0b;
+  border-radius: 0.4cqw;
+}
+.zen-laptop-app-tools > small {
+  font-size: 1cqw;
+  margin-left: 1cqw;
+  color: #676980;
+}
+.zen-laptop-export {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5cqw;
+  padding: 0.7cqw 1cqw;
+  border-radius: 0.5cqw;
+  background: #8553e7;
+  color: #eee6ff;
+  font-size: 1.1cqw;
+}
+.zen-laptop-export .icon {
+  width: 1.4cqw;
+  height: 1.4cqw;
+}
+.zen-laptop-editor {
+  display: grid;
+  grid-template-columns: 47% 53%;
+  height: calc(100% - 10.7cqw);
+}
+.zen-laptop-preview {
+  padding: 2cqw 3cqw 0;
+  background: #191b2d;
+  overflow: hidden;
+}
+.zen-laptop-preview > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  box-shadow:
+    0 0 0 1px #ffffff1a,
+    0 5px 15px #0004;
+}
+.zen-laptop-fields {
+  padding: 1.5cqw 1.8cqw;
+  overflow: hidden;
+}
+.zen-laptop-editor-tabs {
+  display: flex;
+  align-items: center;
+  gap: 1.5cqw;
+  margin-bottom: 1.7cqw;
+  font-size: 1.3cqw;
+}
+.zen-laptop-editor-tabs > b {
+  padding: 0.7cqw 1.1cqw;
+  background: #8252df;
+  border-radius: 0.6cqw;
+  color: #eee6ff;
+  font-weight: 500;
+}
+.zen-laptop-editor-tabs > .icon {
+  margin-left: auto;
+  width: 1.6cqw;
+  height: 1.6cqw;
+  color: #b68ef1;
+}
+.zen-laptop-field {
+  margin-bottom: 1.4cqw;
+  border: 1px solid #ffffff0e;
+  border-radius: 0.8cqw;
+  padding: 1.3cqw;
+  background: #151729;
+  font-size: 1.2cqw;
+}
+.zen-laptop-field > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1cqw;
+}
+.zen-laptop-field small {
+  color: #b694f3;
+  font-size: 1.5cqw;
+}
+.zen-laptop-field > i {
+  display: block;
+  height: 1.5cqw;
+  border: 1px solid #ffffff0b;
+  background: #0e1020;
+  border-radius: 0.3cqw;
+  margin-top: 1cqw;
+}
+.zen-laptop-field > i:last-child {
+  width: 65%;
+}
+.zen-laptop-source-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5cqw;
+  color: #726780;
+  font-size: 0.9cqw;
+}
+.zen-laptop-source-note > .icon {
+  width: 1.3cqw;
+  height: 1.3cqw;
+}
+.zen-laptop-screen-brand {
+  position: absolute;
+  bottom: -1.8cqw;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #7a747f;
+  font-size: 0.8cqw;
+  letter-spacing: 0.03em;
+}
+.zen-laptop-deck {
+  position: relative;
+  min-height: 49cqw;
+  padding: 5.5cqw 3cqw 2cqw;
+  background: linear-gradient(100deg, #2a2a2d, #38383b 50%, #29292c);
+  border: 1px solid #5f5e65;
+  border-radius: 1.2cqw 1.2cqw 2cqw 2cqw;
+  box-shadow:
+    inset 0 1px 1px #ffffff20,
+    inset 0 -2px 2px #0005;
+}
+.zen-laptop-hinge {
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  height: 1.7cqw;
+  top: 0;
+  background: linear-gradient(#09090a, #18181a);
+  border-radius: 0 0 0.6cqw 0.6cqw;
+}
+.zen-laptop-key-area {
+  display: grid;
+  grid-template-columns: 5% 90% 5%;
+  align-items: stretch;
+}
+.zen-laptop-speaker {
+  background-image: radial-gradient(#080809 28%, transparent 35%);
+  background-size: 0.55cqw 0.55cqw;
+  margin: 1cqw 0.5cqw;
+  opacity: 0.7;
+}
+.zen-laptop-keys {
+  padding: 0.7cqw;
+  background: #151516;
+  border: 1px solid #525157;
+  border-radius: 1cqw;
+  box-shadow: 0 0 1cqw #ccc3;
+}
+.zen-laptop-key-row {
+  display: flex;
+  gap: 0.5cqw;
+  margin-bottom: 0.5cqw;
+  height: 3.7cqw;
+}
+.zen-laptop-key-row:first-child {
+  height: 2.1cqw;
+}
+.zen-laptop-key-row:last-child {
+  margin-bottom: 0;
+}
+.zen-laptop-key-row > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1cqw;
+  min-width: 0;
+  border: 1px solid #3b3a3f;
+  border-bottom-color: #080809;
+  border-radius: 0.45cqw;
+  background: linear-gradient(145deg, #161618, #08080a);
+  box-shadow:
+    inset 0 0.1cqw 0.25cqw #ffffff10,
+    0 0.15cqw 0.2cqw #000b;
+  color: #c6c2cc;
+  font:
+    400 1.1cqw/1.15 -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  white-space: nowrap;
+}
+.zen-laptop-key-row > span > i {
+  font-style: normal;
+}
+.zen-laptop-key-row:first-child > span {
+  font-size: 0.9cqw;
+}
+.zen-laptop-trackpad {
+  width: 37%;
+  height: 13.5cqw;
+  border: 1px solid #1f1f22;
+  border-radius: 0.9cqw;
+  margin: 2cqw auto 0;
+  background: linear-gradient(140deg, #333336, #3b3b3e);
+  box-shadow: inset 0 1px 1px #ffffff0d;
+}
+.zen-laptop-notch {
+  position: absolute;
+  width: 16%;
+  height: 0.7cqw;
+  bottom: -0.2cqw;
+  left: 42%;
+  border-radius: 1cqw 1cqw 0 0;
+  background: #161618;
+}
+.zen-laptop-edge {
+  height: 1.1cqw;
+  background: linear-gradient(#5b5b60, #252527);
+  border-radius: 0 0 50% 50%;
+  box-shadow: 0 0.5cqw 1cqw #2222;
+}
+.zen-laptop-paper-scene {
+  position: absolute;
+  inset: calc(700px * var(--laptop-scale)) 0 0;
+  pointer-events: none;
+}
+.zen-laptop-cloud {
+  position: absolute;
+  inset: auto 0 0;
+  width: 100%;
+  height: 92%;
+  object-fit: cover;
+  object-position: center bottom;
+}
+.zen-laptop-paper-caption {
+  text-align: center;
+  position: relative;
+  padding-top: calc(30px * var(--laptop-scale));
+}
+.zen-laptop-paper-caption > span {
+  color: #9a85bd;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.zen-home .zen-laptop-paper-caption > h3 {
+  color: #292235;
+  font-size: clamp(24px, 3vw, 42px);
+  font-weight: 500;
+  letter-spacing: -1.4px;
+  line-height: 1.45;
+  margin: 17px 0 0;
+}
+.zen-laptop-hands {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+.zen-laptop-hand {
+  position: absolute;
+  width: calc(128px * var(--laptop-scale));
+  height: auto;
+  bottom: 0;
+  pointer-events: none;
+}
+.zen-laptop-hand-left {
+  left: calc(50% - 364px * var(--laptop-scale));
+}
+.zen-laptop-hand-right {
+  left: calc(50% + 236px * var(--laptop-scale));
+}
+@media (max-width: 640px) {
+  .zen-laptop-stage {
+    margin-top: 35px;
+  }
+  .zen-laptop-paper-caption > span {
+    font-size: 7px;
+  }
+  .zen-home .zen-laptop-paper-caption > h3 {
+    font-size: 23px;
+    margin-top: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zen-laptop-flying-cv {
+    will-change: auto;
+  }
+}

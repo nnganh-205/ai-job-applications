@@ -12,7 +12,7 @@ export default function MyProfilePanel({ profile, profiles, profileId, onSelect,
   }, [profileId]);
   return <div className="my-profile">
     <div className="panel-heading"><h2>Hồ sơ của tôi</h2><span className="analysis-badge ready">{profile ? 'Đã xác nhận' : 'Chưa có hồ sơ'}</span></div>
-    {profiles.length > 1 && <label>Chọn hồ sơ đã xác nhận<select value={profileId} onChange={event => onSelect(event.target.value)}>{profiles.map(item => <option key={item.profile_id} value={item.profile_id}>{item.full_name || 'Hồ sơ không có tên'} · {item.parent_profile_id ? 'Revision' : 'Gốc'} {item.profile_id.slice(-6)}</option>)}</select></label>}
+    {profiles.length > 1 && <label>Chọn hồ sơ đã xác nhận<select name="profile_id" value={profileId} onChange={event => onSelect(event.target.value)}>{profiles.map(item => <option key={item.profile_id} value={item.profile_id}>{item.full_name || 'Hồ sơ không có tên'} · {item.parent_profile_id ? 'Revision' : 'Gốc'} {item.profile_id.slice(-6)}</option>)}</select></label>}
     {!profile ? <div className="empty-panel"><p>Upload CV và xác nhận Master Profile để xem mức độ phù hợp. Không cần upload lại khi đổi công việc.</p><button onClick={onOpenProfile}>Tạo / upload hồ sơ</button></div> : <>
       <h3>{profile.contact.full_name || 'Chưa có tên'}</h3>
       {profile.summary && <p className="profile-summary">{profile.summary}</p>}

@@ -1,4 +1,5 @@
 import json
+from contextlib import nullcontext
 import re
 import os
 import tempfile
@@ -30,12 +31,13 @@ def save_master_profile(
     source_filename: str | None = None,
     root_profile_id: str | None = None,
     parent_profile_id: str | None = None,
+    connection=None,
 ) -> None:
     safe_id = _safe_thread_id(thread_id)
     record = StoredProfile(profile=profile, evidence=list(evidence), warnings=list(warnings), source_text=source_text, source_filename=source_filename,
                            root_profile_id=root_profile_id, parent_profile_id=parent_profile_id)
     if database.enabled():
-        with database.connect() as connection, connection.transaction():
+        with (nullcontext(connection) if connection is not None else database.connect()) as connection, connection.transaction():
             connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (safe_id,))
             if connection.execute("SELECT 1 FROM kltn_app.records WHERE kind='profiles' AND record_id=%s", (safe_id,)).fetchone():
                 raise ValueError("Profile đã tồn tại; không ghi đè hồ sơ đã xác nhận")
@@ -65,8 +67,7 @@ def save_master_profile(
 def load_profile_record(thread_id: str, storage_dir: Path = DEFAULT_STORAGE_DIR) -> StoredProfile | None:
     if database.enabled():
         data = database.get_record("profiles", _safe_thread_id(thread_id))
-        if data is not None:
-            return StoredProfile.model_validate(data)
+        return StoredProfile.model_validate(data) if data is not None else None
     path = storage_dir / f"{_safe_thread_id(thread_id)}.json"
     if not path.exists():
         return None
@@ -78,6 +79,8 @@ def load_profile_record(thread_id: str, storage_dir: Path = DEFAULT_STORAGE_DIR)
 
 
 def list_profile_records() -> list[tuple[str, StoredProfile]]:
+    if database.enabled():
+        return [(item["id"], StoredProfile.model_validate(item["data"])) for item in database.list_records("profiles")]
     records = {}
     for path in sorted(DEFAULT_STORAGE_DIR.glob("*.json"), key=lambda item: item.stat().st_mtime):
         try:

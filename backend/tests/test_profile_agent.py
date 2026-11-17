@@ -10,21 +10,21 @@ from docx import Document
 from langgraph.types import Command
 from pydantic import ValidationError
 
-from backend.app.ai.agents.profile_agent import (
+from ai.agents.profile_agent import (
     fill_clear_missing_fields,
     fill_missing_job_titles,
     remove_contact_from_involvement,
     validate_against_source,
 )
-from backend.app.ai.graph import profile_workflow
-from backend.app.ai.llm.ollama_client import (
+from ai.graph import profile_workflow
+from ai.llm.ollama_client import (
     CONTEXT_LENGTH,
     TIMEOUT_SECONDS,
     OllamaError,
     clean_null_strings,
 )
-from backend.app.ai.llm.profile_extractor import request_profile
-from backend.app.ai.prompts.profile_prompt import PROFILE_EXTRACTION_PROMPT
+from ai.llm.profile_extractor import request_profile
+from ai.prompts.profile_prompt import PROFILE_EXTRACTION_PROMPT
 from backend.app.schemas.profile import MasterProfile
 from backend.app.services.document_reader import DocumentReadError, read_cv
 from backend.app.db.profile_repository import load_master_profile, save_master_profile
@@ -141,7 +141,7 @@ class ProfileSchemaTests(unittest.TestCase):
         self.assertIsNone(result.contact.phone)
         self.assertIsNone(result.education[0].gpa)
 
-    @patch("backend.app.ai.agents.profile_agent.extract_missing_job_titles")
+    @patch("ai.agents.profile_agent.extract_missing_job_titles")
     def test_missing_job_title_is_filled_when_it_exists_in_cv(self, mock_extract):
         mock_extract.return_value = {0: "Backend Developer"}
         profile = empty_profile(
@@ -153,7 +153,7 @@ class ProfileSchemaTests(unittest.TestCase):
         )
         self.assertEqual(result.experience[0].job_title, "Backend Developer")
 
-    @patch("backend.app.ai.agents.profile_agent.extract_missing_job_titles")
+    @patch("ai.agents.profile_agent.extract_missing_job_titles")
     def test_unsupported_job_title_is_rejected(self, mock_extract):
         mock_extract.return_value = {0: "Senior Backend Developer"}
         profile = empty_profile(experience=[{"company": "Công ty ABC"}])
@@ -189,7 +189,7 @@ class ProfileSchemaTests(unittest.TestCase):
         result = remove_contact_from_involvement(profile)
         self.assertEqual(result.involvement, [])
 
-    @patch("backend.app.ai.agents.profile_agent.extract_missing_job_titles")
+    @patch("ai.agents.profile_agent.extract_missing_job_titles")
     def test_supported_job_title_does_not_call_second_inference(self, mock_extract):
         profile = empty_profile(
             experience=[{"company": "Công ty ABC", "job_title": "Backend Developer"}],
@@ -200,13 +200,13 @@ class ProfileSchemaTests(unittest.TestCase):
 
 
 class OllamaTests(unittest.TestCase):
-    @patch("backend.app.ai.llm.ollama_client.httpx.post")
+    @patch("ai.llm.ollama_client.httpx.post")
     def test_ollama_not_running(self, mock_post):
         mock_post.side_effect = httpx.ConnectError("connection refused")
         with self.assertRaisesRegex(OllamaError, "Không kết nối"):
             request_profile("Resume text")
 
-    @patch("backend.app.ai.llm.ollama_client.httpx.post")
+    @patch("ai.llm.ollama_client.httpx.post")
     def test_ollama_timeout_has_correct_message(self, mock_post):
         mock_post.side_effect = httpx.ReadTimeout("timed out")
         with self.assertRaisesRegex(OllamaError, "quá 600 giây"):

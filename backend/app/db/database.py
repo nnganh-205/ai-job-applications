@@ -54,7 +54,20 @@ def put_record(kind: str, key: str, data: dict, *, immutable=False, connection=N
 def migrate():
     with connect() as connection:
         with connection.transaction():
-            connection.execute((Path(__file__).parent / "migrations/001_day3.sql").read_text(), prepare=False)
+            connection.execute("SELECT pg_advisory_xact_lock(hashtext('kltn_migrations'))")
+            connection.execute("CREATE SCHEMA IF NOT EXISTS kltn_app")
+            connection.execute("CREATE TABLE IF NOT EXISTS kltn_app.schema_migrations (name text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())")
+            import hashlib
+            for path in sorted((Path(__file__).parent / "migrations").glob("[0-9]*.sql")):
+                sql = path.read_text()
+                checksum = hashlib.sha256(sql.encode()).hexdigest()
+                previous = connection.execute("SELECT checksum FROM kltn_app.schema_migrations WHERE name=%s", (path.name,)).fetchone()
+                if previous:
+                    if previous["checksum"] != checksum:
+                        raise ValueError(f"Migration đã áp dụng bị thay đổi: {path.name}")
+                    continue
+                connection.execute(sql, prepare=False)
+                connection.execute("INSERT INTO kltn_app.schema_migrations(name,checksum) VALUES (%s,%s)", (path.name, checksum))
     # Saver migrations are also additive and isolated from application tables.
     from langgraph.checkpoint.postgres import PostgresSaver
     with connect(checkpoints=True) as connection:
@@ -63,4 +76,3 @@ def migrate():
 
 if __name__ == "__main__":
     migrate()
-    print("Additive application/checkpoint migrations completed; no legacy data removed.")

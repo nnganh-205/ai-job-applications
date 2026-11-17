@@ -4,7 +4,7 @@ import hashlib
 import json
 
 from backend.app.db import database, profile_repository, job_repository, match_repository
-from backend.app.db.job_posting_repository import storage_root
+from backend.app.db.job_posting_repository import storage_root, get_posting, upsert_posting, legacy_postings
 from backend.app.schemas.profile import MasterProfile, StoredProfile
 from backend.app.schemas.dashboard import JobPosting
 from backend.app.schemas.matching import MatchResponse
@@ -32,7 +32,7 @@ def import_legacy():
                 record = StoredProfile.model_validate(data) if "profile" in data else StoredProfile(profile=MasterProfile.model_validate(data))
                 data = record.model_dump(mode="json")
             elif kind == "postings":
-                JobPosting.model_validate(data)
+                data = JobPosting.model_validate(data).model_dump(mode="json")
             elif kind == "matches":
                 MatchResponse.model_validate(data)
             elif kind == "analyses":
@@ -44,6 +44,16 @@ def import_legacy():
         except (ValueError, TypeError, KeyError):
             counts["invalid"] += 1
             continue
+        if kind == "postings":
+            job = JobPosting.model_validate(data)
+            if get_posting(key) is None:
+                upsert_posting(job)
+                counts["inserted"] += 1
+            else:
+                counts["existing"] += 1
+            if hashlib.sha256(path.read_bytes()).digest() != digest:
+                raise RuntimeError("Legacy file changed concurrently")
+            continue
         with database.connect() as connection, connection.transaction():
             existing = connection.execute("SELECT 1 FROM kltn_app.records WHERE kind=%s AND record_id=%s", (kind, key)).fetchone()
             database.put_record(kind, key, data, immutable=True, connection=connection)
@@ -54,6 +64,10 @@ def import_legacy():
                 connection.execute("INSERT INTO kltn_app.profile_heads(root_id,revision_id) VALUES (%s,%s) ON CONFLICT DO NOTHING", (root, root))
         if hashlib.sha256(path.read_bytes()).digest() != digest:
             raise RuntimeError("Legacy file changed concurrently; import stopped without overwriting it")
+    for job in legacy_postings():
+        if get_posting(job.posting_id) is None:
+            upsert_posting(job)
+            counts["inserted"] += 1
     return counts
 
 

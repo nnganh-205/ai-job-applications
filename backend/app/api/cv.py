@@ -6,10 +6,11 @@ from fastapi import APIRouter, Path, HTTPException
 from fastapi.responses import HTMLResponse, Response
 from pydantic import ValidationError
 
-from backend.app.ai.graph import cv_workflow as workflow
+from ai.graph import cv_workflow as workflow
 from backend.app.api.dashboard import execute
 from backend.app.db import workflow_repository as records
 from backend.app.schemas.cv import CVApproval, CVDocument, CVSession, CVStart
+from backend.app.db.profile_revision_repository import RevisionConflict
 from backend.app.services.cv_renderer import TEMPLATES, render_html, render_pdf
 
 router = APIRouter(prefix='/api/cv', tags=['CV Review and Generation'])
@@ -23,6 +24,8 @@ def run(function, *args):
             return function(*args)
         except ValidationError as error:
             raise HTTPException(status_code=422, detail='Dữ liệu CV không đúng schema; chưa lưu thay đổi.') from error
+        except RevisionConflict as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
     return execute(checked)
@@ -31,6 +34,13 @@ def run(function, *args):
 @router.get('/templates')
 def templates():
     return TEMPLATES
+
+
+@router.get('/templates/{template_id}/preview', response_class=HTMLResponse)
+def template_preview(template_id: str):
+    from backend.app.services.cv_templates import metadata, example_document
+    meta=run(metadata,template_id)
+    return HTMLResponse(run(render_html,example_document(),template_id,{'template':template_id,'font':meta['font'],'color':meta['color']}),headers={'Cache-Control':'public, max-age=3600'})
 
 
 @router.post('/sessions', response_model=CVSession)
@@ -52,7 +62,7 @@ def approve(session_id: SessionID, request: CVApproval):
 def preview(session_id: SessionID, request: CVApproval):
     current = run(workflow.view, session_id)
     document = request.document or current.document
-    from backend.app.ai.agents.cv_agent import validate_edits
+    from ai.agents.cv_agent import validate_edits
     run(validate_edits, current.document, document)
     return HTMLResponse(run(render_html, document, request.template), headers={'Cache-Control': 'no-store'})
 
@@ -68,5 +78,12 @@ def version(cv_id: CVID):
 @router.get('/versions/{cv_id}/pdf')
 def pdf(cv_id: CVID):
     data = version(cv_id)
-    content = run(render_pdf, CVDocument.model_validate(data['document']), data['template'])
-    return Response(content, media_type='application/pdf', headers={'Content-Disposition': f'attachment; filename="{cv_id}.pdf"', 'Cache-Control': 'no-store'})
+    content = run(render_pdf, CVDocument.model_validate(data['document']), data['template'], {**(data.get('presentation') or {'template':data['template']}),'template_version':(data.get('presentation') or {}).get('template_version',1)})
+    from backend.app.services.cv_lineage import content_hash
+    return Response(content, media_type='application/pdf', headers={'Content-Disposition': f'attachment; filename="{cv_id}.pdf"', 'Cache-Control': 'no-store', 'X-CV-ID':cv_id, 'X-CV-Version':str(data.get('draft_version','')), 'X-CV-Content-Hash':content_hash(data['document'])})
+
+
+@router.get('/versions/{cv_id}/status')
+def version_status(cv_id: CVID):
+    from backend.app.services.cv_lineage import version_status as status
+    return run(status,cv_id)

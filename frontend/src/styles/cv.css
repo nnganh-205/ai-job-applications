@@ -1,0 +1,23 @@
+.cv-workspace { margin: 20px 0; padding: 22px; background: white; border: 1px solid #dce4ed; border-radius: 12px; }
+.cv-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 16px 0; }
+.cv-controls label { flex: 1 1 180px; }
+.cv-workspace fieldset { border: 1px solid #dce4ed; border-radius: 8px; margin: 12px 0; padding: 14px; min-width: 0; }
+.cv-workspace legend { font-weight: 700; }
+.cv-review-item { padding: 12px; margin: 8px 0; background: #f4f7fb; border-radius: 8px; overflow-wrap: anywhere; }
+.cv-preview-frame { width: 100%; height: 900px; border: 1px solid #dce4ed; background: white; margin-top: 16px; }
+.cv-download { display: inline-block; padding: 10px 16px; background: #12745a; color: white; border-radius: 8px; }
+
+.matching-panel .score-box { text-align: center; padding: 24px 16px; background: #f0f8f4; border-radius: 12px; margin-bottom: 20px; }
+.match-score small { font-size: .45em; font-weight: 600; margin-left: 3px; }
+.matching-panel .match-group h3 { display: flex; align-items: center; gap: 8px; }
+.matching-panel .match-group h3 span { font-size: 11px; min-width: 20px; padding: 2px 6px; background: #edf1f4; color: #607080; border-radius: 20px; text-align: center; }
+.match-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.match-tags > span { max-width: 100%; padding: 6px 10px; background: #f2f5f8; border-radius: 7px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.match-group.positive .match-tags > span { background: #eaf6ee; color: #206644; }
+.match-group.negative .match-tags > span { background: #fff0ef; color: #a9453a; }
+.match-loading { display: flex; align-items: center; gap: 10px; padding: 20px 0; color: #607080; }
+.match-loading-dot { width: 9px; height: 9px; background: #1c956b; border-radius: 50%; }
+
+.match-evidence { font-size:13px; line-height:1.8; }.match-evidence article { padding:14px 0; border-bottom:1px solid var(--border); }.match-evidence small { color:var(--muted); }.match-evidence blockquote { margin:12px 0; padding:10px 14px; border-left:3px solid var(--brand); background:#f5f8ff; white-space:pre-wrap; }.editor-review { padding:18px; background:white; border:1px solid var(--border); border-radius:12px; }
+
+.a4-preview-container { width:100%; overflow:hidden; background:#f3f5fa; position:relative; }.a4-preview-frame { display:block; width:794px; height:1123px; border:0; background:white; transform-origin:top left; margin:0 auto; }.editor-preview .a4-preview-container { border:1px solid var(--border); }

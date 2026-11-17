@@ -49,3 +49,11 @@ def answer_key(root_id: str, target: dict) -> str:
 
 def answer_for(root_id: str, target: dict):
     return get("answers", answer_key(root_id, target))
+
+
+def list_kind(kind: str) -> list[dict]:
+    safe_key(kind)
+    if database.enabled():
+        return [row['data'] for row in database.list_records(kind)]
+    import json
+    return [json.loads(path.read_text(encoding='utf-8')) for path in (DEFAULT_WORKFLOW_STORAGE / kind).glob('*.json')]

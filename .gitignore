@@ -9,8 +9,8 @@ venv/
 .coverage
 frontend/node_modules/
 frontend/dist/
-ai/models/adapters/*
-!ai/models/adapters/.gitkeep
+ai/models/*
+!ai/models/.gitkeep
 ai/data/raw/*
 !ai/data/raw/.gitkeep
 ai/data/processed/*
@@ -32,3 +32,8 @@ output/evaluation/
 frontend/.vite/
 backend/storage/matches/
 backend/storage/workflows/
+
+backend/storage/assets/
+
+# Separate private human review progress and exports.
+ai/data/reviews/

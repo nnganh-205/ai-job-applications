@@ -1,7 +1,7 @@
 """Identity of a question and the user's confirmations, outside CV content."""
 
 from backend.app.db import profile_repository, workflow_repository as records
-from backend.app.ai.agents.jd_agent import normalize_requirements, assign_requirement_ids, build_requirement_groups
+from ai.agents.jd_agent import normalize_requirements, assign_requirement_ids, build_requirement_groups
 
 
 def requirement_targets(job) -> dict[str, dict]:

@@ -1,0 +1,14 @@
+[
+ {"id":"software","cohort":"regression","text":"mình dùng FastAPI để viết các API tiếp nhận hồ sơ và lưu dữ liệu vào PostgreSQL; chưa kiểm thử tải đồng thời","units":["FastAPI","API","hồ sơ","PostgreSQL","chưa kiểm thử tải đồng thời"]},
+ {"id":"sales","cohort":"regression","text":"mình dùng Excel để cập nhật tình trạng các đơn hàng và gọi điện xác nhận thông tin giao hàng với khách","units":["Excel","đơn hàng","gọi điện|điện thoại","xác nhận","giao hàng"]},
+ {"id":"hr","cohort":"regression","text":"mình dùng bảng tính để ghi lịch phỏng vấn của ứng viên và gửi email nhắc lịch","units":["bảng tính","lịch phỏng vấn","ứng viên","email","nhắc lịch"]},
+ {"id":"accounting","cohort":"regression","text":"mình hỗ trợ kế toán nhập dữ liệu hóa đơn vào bảng kê bằng Excel; không phê duyệt thanh toán","units":["hỗ trợ","kế toán","hóa đơn","bảng kê","Excel","không phê duyệt thanh toán"]},
+ {"id":"marketing","cohort":"regression","text":"mình viết nội dung giới thiệu sản phẩm cho trang Facebook; chưa đo tỷ lệ chuyển đổi","units":["nội dung","sản phẩm","Facebook","chưa đo tỷ lệ chuyển đổi"]},
+ {"id":"operations","cohort":"regression","text":"mình phối hợp đối chiếu 23 phiếu giao nhận với danh sách bàn giao; không phụ trách kiểm định hàng hóa","units":["phối hợp|cộng tác","23","phiếu giao nhận","danh sách bàn giao","không phụ trách kiểm định hàng hóa"]},
+ {"id":"retail","cohort":"new","text":"mình dùng Excel để đánh dấu các sản phẩm sắp hết hàng rồi gửi danh sách cho người phụ trách nhập hàng","units":["Excel","sản phẩm","sắp hết hàng","gửi","danh sách","người phụ trách nhập hàng"]},
+ {"id":"customer-service","cohort":"new","text":"mình tiếp nhận phản ánh của khách qua điện thoại rồi chuyển yêu cầu cho bộ phận kỹ thuật; không quyết định phương án xử lý","units":["phản ánh|phản hồi","khách","điện thoại","chuyển","kỹ thuật","không quyết định phương án xử lý"]},
+ {"id":"data-analysis","cohort":"new","text":"mình dùng Pandas để tìm các dòng thiếu dữ liệu trong bảng doanh thu; chưa tự điền số liệu","units":["Pandas","dòng","thiếu dữ liệu","bảng doanh thu","chưa tự điền số liệu"]},
+ {"id":"design","cohort":"new","text":"mình phác thảo bố cục trang giới thiệu sản phẩm bằng Figma và phối hợp với lập trình viên chỉnh khoảng cách giữa các thành phần","units":["phác thảo","bố cục","sản phẩm","Figma","phối hợp|cộng tác","lập trình viên","khoảng cách"]},
+ {"id":"administration","cohort":"new","text":"mình cập nhật trạng thái hồ sơ và ghi lại các hồ sơ còn thiếu chữ ký để gửi cho người phụ trách","units":["trạng thái hồ sơ","hồ sơ","thiếu chữ ký","gửi","người phụ trách"]},
+ {"id":"community","cohort":"new","text":"mình hỗ trợ phân loại sách theo chủ đề và ghi nhận 16 sách bị rách; chưa sửa các sách bị hỏng","units":["hỗ trợ","phân loại","chủ đề","16","sách","rách","chưa sửa các sách bị hỏng"]}
+]

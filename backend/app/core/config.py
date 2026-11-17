@@ -8,7 +8,7 @@ from urllib.parse import urlsplit
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-LLMTask = Literal["default", "profile", "jd", "update", "cv"]
+LLMTask = Literal["default", "profile", "jd", "update", "cv", "form", "interview", "assistant", "writer", "verifier"]
 
 
 @dataclass(frozen=True)
@@ -19,14 +19,20 @@ class Settings:
     jd_model: str = "qwen3:4b"
     update_model: str = "qwen3:4b"
     cv_model: str = "qwen3:4b"
+    writer_model: str | None = "kltn-writer-8b-unsloth:latest"
+    form_model: str = "qwen3:4b"
+    interview_model: str = "qwen3:4b"
+    assistant_model: str = "qwen3:4b"
+    verifier_model: str = "qwen3:8b"
     embedding_model: str = "bge-m3"
     timeout_seconds: float = 600
     context_length: int = 16_384
     profile_storage_dir: Path = PROJECT_ROOT / "backend/storage/master_profiles"
 
     def model_for_task(self, task: LLMTask) -> str:
-        if task not in {"default", "profile", "jd", "update", "cv"}:
+        if task not in {"default", "profile", "jd", "update", "cv", "form", "interview", "assistant", "writer", "verifier"}:
             raise ValueError("Unknown LLM task")
+        if task == "writer": return self.writer_model or self.cv_model
         return self.default_model if task == "default" else getattr(self, f"{task}_model")
 
     @classmethod
@@ -48,6 +54,11 @@ class Settings:
             jd_model=os.getenv("JD_MODEL", model),
             update_model=os.getenv("UPDATE_MODEL", model),
             cv_model=os.getenv("CV_MODEL", model),
+            writer_model=os.getenv("WRITER_MODEL", cls.writer_model) or None,
+            form_model=os.getenv("FORM_CV_MODEL", os.getenv("CV_MODEL", model)),
+            interview_model=os.getenv("INTERVIEW_MODEL", model),
+            assistant_model=os.getenv("ASSISTANT_MODEL", model),
+            verifier_model=os.getenv("VERIFIER_MODEL", cls.verifier_model),
             embedding_model=os.getenv("EMBEDDING_MODEL", cls.embedding_model),
             timeout_seconds=timeout,
             context_length=context,

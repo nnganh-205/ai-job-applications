@@ -1,6 +1,7 @@
 """Immutable confirmed revisions with compare-and-set of the current root head."""
 
 import hashlib
+from contextlib import nullcontext
 from threading import RLock
 
 from backend.app.db import database, profile_repository, workflow_repository as records
@@ -31,13 +32,13 @@ def current_revision(profile_id: str) -> str:
 
 
 def commit_revision(base_id: str, profile: MasterProfile, *, session_id: str, action_id: str,
-                    changed_paths: list[str], quote: str) -> str:
+                    changed_paths: list[str], quote: str, connection=None) -> str:
     base = profile_repository.load_profile_record(base_id, profile_repository.DEFAULT_STORAGE_DIR)
     if base is None:
         raise LookupError("Hồ sơ gốc không tồn tại")
     root = base.root_profile_id or base_id
     revision = "rev_" + hashlib.sha256(f"{session_id}|{action_id}|{profile.model_dump_json()}".encode()).hexdigest()[:24]
-    evidence = list(base.evidence)
+    evidence = [item for item in base.evidence if not any(item.field_path == path or item.field_path.startswith(path + "[") or item.field_path.startswith(path + ".") for path in changed_paths)]
     evidence.extend(SourceEvidence(field_path=path, source_id=session_id, origin="user_confirmation", quote=quote) for path in changed_paths)
     record = StoredProfile(profile=profile, evidence=evidence, warnings=base.warnings,
                            source_text=base.source_text, source_filename=base.source_filename,
@@ -46,7 +47,7 @@ def commit_revision(base_id: str, profile: MasterProfile, *, session_id: str, ac
                     session_id=session_id, created_at=utc_now(), changed_paths=changed_paths)
     if database.enabled():
         from psycopg.types.json import Jsonb
-        with database.connect() as connection, connection.transaction():
+        with (nullcontext(connection) if connection is not None else database.connect()) as connection, connection.transaction():
             connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (root,))
             existing = connection.execute("SELECT 1 FROM kltn_app.profile_revisions WHERE revision_id=%s", (revision,)).fetchone()
             if existing:

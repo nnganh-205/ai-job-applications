@@ -1,0 +1,28 @@
+:root {
+  font-family: 'Noto UI', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #17243d;
+  background: #f7f9fc;
+  font-synthesis: none;
+  --brand: #3159d9;
+  --brand-dark: #2344af;
+  --brand-soft: #edf2ff;
+  --surface: #fff;
+  --ink: #17243d;
+  --muted: #6b778e;
+  --border: #e3e8f1;
+  --radius: 16px;
+  --shadow: 0 8px 30px #172a4b07;
+  color-scheme: light;
+  font-size: 14px;
+}
+@font-face {font-family:'Noto UI';src:url('/fonts/NotoSans.ttf') format('truetype');font-weight:100 900;font-display:swap;}
+* { box-sizing: border-box; }
+button,input,select,textarea { font: inherit; }
+button,.button-link,a { -webkit-tap-highlight-color:transparent; }
+button,.button-link { transition: background .18s, box-shadow .18s, border-color .18s, transform .18s; }
+button:hover:not(:disabled),.button-link:hover { filter:brightness(.97); }
+a { text-underline-offset:3px; }
+:focus-visible { outline:3px solid #8baaff;outline-offset:3px; }
+.icon { flex-shrink:0;vertical-align:middle; }
+::selection {background:#dbe6ff;color:#17243d;}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }

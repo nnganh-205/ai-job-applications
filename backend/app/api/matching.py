@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path
 
-from backend.app.ai.agents.matching_agent import match_profile
+from ai.agents.matching_agent import match_profile
 from backend.app.db.job_repository import load_job_analysis
 from backend.app.db.match_repository import load_match, save_match
 from backend.app.db.profile_repository import load_profile_record

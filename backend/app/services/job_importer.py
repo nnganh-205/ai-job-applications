@@ -71,6 +71,22 @@ def salary_text(low, high, currency, period) -> str | None:
     return f"{min(values):g} – {max(values):g} {currency or '(chưa công bố tiền tệ)'} / {period or '(chưa công bố kỳ lương)'}"
 
 
+def salary_metadata(low, high, currency, period) -> dict:
+    """Retain only explicit numeric bounds and recognized source units."""
+    import math
+    def bound(value):
+        return value if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value >= 0 else None
+    low, high = bound(low), bound(high)
+    if low is not None and high is not None and low > high:
+        return {}
+    code = str(currency or '').upper()
+    unit = str(period or '').lower()
+    unit = {'hourly':'hour', 'daily':'day', 'weekly':'week', 'monthly':'month', 'yearly':'year', 'annually':'year', 'annual':'year'}.get(unit, unit)
+    return dict(salary_min=low, salary_max=high,
+        salary_currency=code if re.fullmatch(r'[A-Z]{3}', code) else None,
+        salary_period=unit if unit in {'hour','day','week','month','year'} else None)
+
+
 def himalayas_job(data: dict) -> JobPosting:
     url = source_link(data["guid"], "himalayas.app")
     apply_url = source_link(data["applicationLink"], "himalayas.app")
@@ -84,6 +100,7 @@ def himalayas_job(data: dict) -> JobPosting:
         location_restrictions=locations or [], timezone_restrictions=[str(x) for x in data.get("timezoneRestrictions", [])],
         workplace_type="remote", employment_type=data.get("employmentType"),
         salary=salary_text(data.get("minSalary"), data.get("maxSalary"), data.get("currency"), data.get("salaryPeriod")),
+        **salary_metadata(data.get("minSalary"), data.get("maxSalary"), data.get("currency"), data.get("salaryPeriod")),
         description=description_text(data["description"]), source_name="Himalayas", external_id=url,
         source_url=url, apply_url=apply_url, fetched_at=now, imported_at=now,
         source_created_at=timestamp(data.get("pubDate")), expires_at=timestamp(data.get("expiryDate")), import_method="fetch",
@@ -99,6 +116,7 @@ def remoteok_job(data: dict) -> JobPosting:
         posting_id=posting_id("remoteok", "", str(data["id"])), title=data["position"], company=data.get("company"),
         location=data.get("location") or None, workplace_type="remote",
         salary=salary_text(data.get("salary_min"), data.get("salary_max"), data.get("salary_currency"), data.get("salary_period")),
+        **salary_metadata(data.get("salary_min"), data.get("salary_max"), data.get("salary_currency"), data.get("salary_period")),
         description=description_text(data["description"]), source_name="Remote OK", external_id=str(data["id"]),
         source_url=url, apply_url=url, fetched_at=now, imported_at=now,
         source_created_at=timestamp(data.get("date") or data.get("epoch")), import_method="fetch",
@@ -219,7 +237,7 @@ def lever_job(data: dict, board: str) -> JobPosting:
         company=BOARDS[board], location=categories.get("location"),
         employment_type=categories.get("commitment"),
         workplace_type=None if data.get("workplaceType") == "unspecified" else data.get("workplaceType"),
-        salary=salary, description="\n\n".join(part.strip() for part in parts if part and part.strip()),
+        salary=salary, **salary_metadata(salary_range.get("min"), salary_range.get("max"), salary_range.get("currency"), salary_range.get("interval")), description="\n\n".join(part.strip() for part in parts if part and part.strip()),
         source_name="Lever", source_board=board, external_id=external_id,
         source_url=source_url, apply_url=data.get("applyUrl") or source_url,
         fetched_at=now, imported_at=now, source_created_at=created_at,

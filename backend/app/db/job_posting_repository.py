@@ -67,6 +67,12 @@ def analysis_text(job: JobPosting) -> str:
 
 def source_hash(job: JobPosting) -> str:
     text = unicodedata.normalize("NFC", analysis_text(job).replace("\r\n", "\n").replace("\r", "\n"))
+    metadata = {field: getattr(job, field) for field in (
+        "industry", "experience_level", "salary_min", "salary_max", "salary_currency", "salary_period",
+        "work_locations", "expires_at", "structured_expires_at", "source_expires_at_text", "expiry_conflict", "expiry_source"
+    ) if getattr(job, field) is not None and (field not in {"expiry_conflict","work_locations"} or getattr(job,field))}
+    if metadata:
+        text += "\nSource filter metadata:\n" + json.dumps(metadata, ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(text.encode()).hexdigest()
 
 
@@ -100,6 +106,10 @@ def legacy_postings() -> list[JobPosting]:
 
 
 def list_postings() -> list[JobPosting]:
+    if database.enabled():
+        with database.connect() as connection:
+            rows = connection.execute("SELECT payload FROM kltn_app.job_postings ORDER BY updated_at DESC,posting_id").fetchall()
+        return [JobPosting.model_validate(row["payload"]) for row in rows]
     jobs = {job.posting_id: job for job in legacy_postings()}
     for path in storage_root().glob("posting_*.json"):
         job = JobPosting.model_validate_json(path.read_text(encoding="utf-8"))
@@ -111,13 +121,42 @@ def list_postings() -> list[JobPosting]:
     return sorted(jobs.values(), key=lambda job: (job.fetched_at or job.imported_at, job.posting_id), reverse=True)
 
 
+def search_postings(**filters) -> list[JobPosting]:
+    """Push source filters to SQL; keep identical literal search in JSON mode."""
+    from backend.app.services.job_filters import matches
+    if not database.enabled():
+        return [job for job in list_postings() if matches(job, **filters)]
+    clauses, params = [], []
+    for field in ("location", "employment_type", "workplace_type", "source_name"):
+        if filters.get(field):
+            clauses.append(f"{field}=%s")
+            params.append(filters[field])
+    for field in ("industry", "experience_level"):
+        if filters.get(field):
+            clauses.append(f"payload->>'{field}'=%s")
+            params.append(filters[field])
+    if filters.get("saved"):
+        clauses.append("saved=true")
+    if filters.get("salary_min") is not None:
+        clauses.extend(["payload->>'salary_currency'=%s", "payload->>'salary_period'=%s", "(payload->>'salary_min')::numeric >= %s"])
+        params.extend([filters.get("salary_currency", "VND"), filters.get("salary_period", "month"), filters["salary_min"]])
+    for word in filters.get("q", "").split():
+        # Parameters and escaped wildcards preserve literal punctuation/search.
+        clauses.append("(title || ' ' || coalesce(company,'') || ' ' || coalesce(payload->>'description','')) ILIKE %s")
+        params.append('%' + word.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%')
+    where = " WHERE " + " AND ".join(clauses) if clauses else ""
+    with database.connect() as connection:
+        rows = connection.execute("SELECT payload FROM kltn_app.job_postings" + where + " ORDER BY updated_at DESC,posting_id", params).fetchall()
+    return [JobPosting.model_validate(row["payload"]) for row in rows]
+
+
 def get_posting(key: str) -> JobPosting | None:
     if not re.fullmatch(r"posting_[a-f0-9]{24}", key):
         raise ValueError("Posting ID không hợp lệ")
     if database.enabled():
-        record = database.get_record("postings", key)
-        if record:
-            return JobPosting.model_validate(record)
+        with database.connect() as connection:
+            row = connection.execute("SELECT payload FROM kltn_app.job_postings WHERE posting_id=%s", (key,)).fetchone()
+        return JobPosting.model_validate(row["payload"]) if row else None
     path = storage_root() / f"{key}.json"
     if path.exists():
         return JobPosting.model_validate_json(path.read_text(encoding="utf-8"))
@@ -128,15 +167,20 @@ def upsert_posting(job: JobPosting) -> tuple[JobPosting, str]:
     job = job.model_copy(deep=True)
     job.content_hash = source_hash(job)
     if database.enabled():
+        from psycopg.types.json import Jsonb
         with database.connect() as connection, connection.transaction():
             connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (job.posting_id,))
-            previous = get_posting(job.posting_id)
+            row = connection.execute("SELECT payload FROM kltn_app.job_postings WHERE posting_id=%s FOR UPDATE", (job.posting_id,)).fetchone()
+            previous = JobPosting.model_validate(row["payload"]) if row else None
             status = "inserted" if previous is None else "unchanged" if previous.content_hash == job.content_hash else "updated"
             if previous:
                 job.saved, job.imported_at = previous.saved, previous.imported_at
-                if status == "updated":
-                    database.put_record("posting_history", f"{job.posting_id}:{previous.content_hash}", previous.model_dump(mode="json"), immutable=True, connection=connection)
-            database.put_record("postings", job.posting_id, job.model_dump(mode="json"), connection=connection)
+            payload = Jsonb(job.model_dump(mode="json"))
+            connection.execute("""INSERT INTO kltn_app.job_postings(posting_id,source_name,external_id,title,company,location,employment_type,workplace_type,saved,content_hash,payload)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT(posting_id) DO UPDATE SET source_name=EXCLUDED.source_name,external_id=EXCLUDED.external_id,title=EXCLUDED.title,company=EXCLUDED.company,location=EXCLUDED.location,employment_type=EXCLUDED.employment_type,workplace_type=EXCLUDED.workplace_type,saved=EXCLUDED.saved,content_hash=EXCLUDED.content_hash,payload=EXCLUDED.payload,updated_at=now()""",
+                (job.posting_id,job.source_name,job.external_id,job.title,job.company,job.location,job.employment_type,job.workplace_type,job.saved,job.content_hash,payload))
+            connection.execute("INSERT INTO kltn_app.job_snapshots(posting_id,content_hash,payload) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING", (job.posting_id,job.content_hash,payload))
         return job, status
     with storage_lock:
         previous = get_posting(job.posting_id)
@@ -160,7 +204,8 @@ def set_saved(key: str, saved: bool) -> JobPosting:
             if job is None:
                 raise LookupError("Không tìm thấy công việc")
             job.saved = saved
-            database.put_record("postings", key, job.model_dump(mode="json"), connection=connection)
+            from psycopg.types.json import Jsonb
+            connection.execute("UPDATE kltn_app.job_postings SET saved=%s,payload=%s WHERE posting_id=%s", (saved, Jsonb(job.model_dump(mode="json")), key))
             return job
     with storage_lock:
         job = get_posting(key)
@@ -174,8 +219,7 @@ def set_saved(key: str, saved: bool) -> JobPosting:
 def read_aux(kind: str, key: str):
     if database.enabled():
         data = database.get_record(kind, key)
-        if data is not None:
-            return data
+        return data
     path = storage_root() / "sync.json" if kind == "feed_state" else storage_root() / "analyses" / f"{key}.json"
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 

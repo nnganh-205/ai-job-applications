@@ -1,8 +1,8 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Path, Query
 
-from backend.app.ai.llm.ollama_client import OllamaConnectionError, OllamaError, OllamaTimeoutError
+from ai.llm.ollama_client import OllamaConnectionError, OllamaError, OllamaTimeoutError
 from backend.app.db.job_posting_repository import get_posting, set_saved
 from backend.app.schemas.dashboard import DashboardEvaluation, EvaluateRequest, JobImportRequest, JobPosting, SavedJobRequest
 from backend.app.services.dashboard_service import dashboard_snapshot, evaluate_job
@@ -39,8 +39,8 @@ def execute(function, *args, **kwargs):
 
 
 @router.get("")
-def dashboard(q: str = Query(default="", max_length=200), location: str = "", employment_type: str = "", workplace_type: str = "", saved: bool = False, source_name: str = "", domestic_sources_only: bool = False):
-    return execute(dashboard_snapshot, q, location, employment_type, workplace_type, saved, source_name, domestic_sources_only)
+def dashboard(q: str = Query(default="", max_length=200), location: str = "", employment_type: str = "", workplace_type: str = "", saved: bool = False, source_name: str = "", domestic_sources_only: bool = False, industry: str = Query(default="", max_length=200), experience_level: str = Query(default="", max_length=200), salary_min: float | None = Query(default=None, ge=0, allow_inf_nan=False), salary_currency: str = Query(default="VND", pattern=r"^[A-Z]{3}$"), salary_period: Literal["hour", "day", "week", "month", "year"] = "month"):
+    return execute(dashboard_snapshot, q, location, employment_type, workplace_type, saved, source_name, domestic_sources_only, industry, experience_level, salary_min, salary_currency, salary_period)
 
 
 @router.post("/jobs", response_model=JobPosting)
@@ -68,7 +68,7 @@ def refresh(posting_id: PostingID):
 
 @router.post("/jobs/{posting_id}/evaluate", response_model=DashboardEvaluation)
 def evaluate(posting_id: PostingID, request: EvaluateRequest):
-    return execute(evaluate_job, posting_id, request.profile_id)
+    return execute(evaluate_job, posting_id, request.profile_id, cv_id=request.cv_id)
 
 
 @router.patch("/jobs/{posting_id}/saved", response_model=JobPosting)

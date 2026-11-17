@@ -2,8 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path
 
-from backend.app.ai.graph.jd_workflow import run_jd_analysis
-from backend.app.ai.llm.ollama_client import (
+from ai.graph.jd_workflow import run_jd_analysis
+from ai.llm.ollama_client import (
     OllamaConnectionError,
     OllamaResponseError,
     OllamaTimeoutError,

@@ -4,8 +4,8 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Path, UploadFile
 from starlette.concurrency import run_in_threadpool
 
-from backend.app.ai.graph.profile_workflow import confirm_extraction, profile_graph, start_extraction
-from backend.app.ai.llm.ollama_client import OllamaConnectionError, OllamaError, OllamaTimeoutError
+from ai.graph.profile_workflow import confirm_extraction, profile_graph, start_extraction
+from ai.llm.ollama_client import OllamaConnectionError, OllamaError, OllamaTimeoutError
 from backend.app.schemas.profile import (
     ConfirmationRequest,
     ExtractionResponse,

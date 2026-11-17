@@ -1,0 +1,270 @@
+/* Shared navy and violet atmosphere, with light workspaces and a dark landing page. */
+.aurora-shell, .landing-shell {
+  --atmosphere-navy: #102848;
+  --atmosphere-blue: #2c5285;
+  --atmosphere-violet: #7662b7;
+}
+.aurora-shell {
+  --brand: #6f55c8;
+  --brand-dark: #353d80;
+  --brand-soft: #eee6fc;
+  --ink: #20283f;
+  --muted: #766d86;
+  --border: #bba6dd40;
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  background: #f3f5fb;
+  color: var(--ink);
+}
+.aurora-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 0% 0%, #7662b74a, transparent 31%),
+    radial-gradient(ellipse at 100% 55%, #24477f6b, transparent 48%),
+    radial-gradient(ellipse at 55% 100%, #3c63904a, transparent 40%),
+    #f3f5fb;
+}
+.aurora-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: -70px;
+  background:
+    radial-gradient(ellipse at 2% 7%, #7552aa80, transparent 25%),
+    radial-gradient(ellipse at 92% 0%, #263e6c80, transparent 36%),
+    radial-gradient(ellipse at 100% 77%, #235086a0, transparent 37%),
+    radial-gradient(ellipse at 7% 100%, #7462b552, transparent 23%);
+  opacity: .65;
+  filter: blur(42px);
+}
+.aurora-backdrop::after {
+  content: "";
+  position: absolute;
+  width: 125%;
+  height: 53%;
+  left: -12%;
+  top: 23%;
+  border-radius: 50%;
+  background: linear-gradient(105deg, #7160b214, #ffffffc7 35%, #ffffffc7 65%, #27478012);
+  filter: blur(32px);
+  transform: rotate(-17deg);
+}
+.aurora-shell .site-content,
+.aurora-shell .workspace-layout,
+.aurora-shell .workspace-content,
+.aurora-shell .public-content,
+.aurora-shell main.assistant-page {
+  background: transparent;
+}
+.aurora-shell .mega-header .site-header-inner {
+  background: #ffffff42;
+  border-color: #ffffffa8;
+  box-shadow: 0 8px 28px #7356970c, inset 0 1px 0 #ffffffd9;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+.aurora-shell :is(.search-filters, .job-card, .job-detail, .company-info-card,
+  .jobs-help, .template-card, .gallery-hero, .template-expanded,
+  .events-page > article, .empty-panel, .empty-state, .assistant-input-box,
+  .assistant-starters button, .assistant-history) {
+  background: #ffffffbf;
+  border: 1px solid #ffffffd4;
+  box-shadow: 0 12px 38px #7151930a, inset 0 1px 0 #fff9;
+  backdrop-filter: blur(12px) saturate(125%);
+  -webkit-backdrop-filter: blur(12px) saturate(125%);
+}
+.aurora-shell .workspace-sidebar {
+  background: #ffffff42;
+  border-color: #ffffffa3;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.aurora-shell .workspace-sidebar-help {
+  background: linear-gradient(140deg, #ffffff8c, #ede0fb91);
+  border-color: #ffffffb3;
+}
+.aurora-shell .workspace-sidebar nav a.active {
+  color: #7542c7;
+  background: #e8dafb94;
+}
+.aurora-shell .gallery-hero {
+  background: linear-gradient(115deg, #fffffff2, #ffffffde 65%, #e9eaf8b0);
+}
+.aurora-shell .template-image-button {
+  background: linear-gradient(140deg, #f8f5fc80, #ece3f95e);
+}
+.aurora-shell .gallery-controls,
+.aurora-shell .assistant-composer,
+.aurora-shell .assistant-conversation,
+.aurora-shell .assistant-messages,
+.aurora-shell .assistant-toolbar {
+  background: transparent;
+}
+.aurora-shell .assistant-message.user {
+  background: #eadff7c4;
+}
+.aurora-shell .site-footer,
+.aurora-shell .workspace-footer {
+  background: #ffffff38;
+  border-color: #ffffff8c;
+}
+.aurora-shell :is(input, select, textarea) {
+  border-color: #d8c9eb;
+}
+.aurora-shell .assistant-input-box textarea {
+  background: transparent;
+}
+.aurora-shell .job-card:hover,
+.aurora-shell .template-card:hover {
+  border-color: #c7adeb;
+  box-shadow: 0 12px 32px #8052d716;
+}
+@media (max-width: 780px) {
+  .aurora-backdrop::before { filter: blur(28px); }
+  .aurora-shell .workspace-sidebar { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .aurora-shell :is(.search-filters, .job-card, .template-card, .assistant-input-box) {
+    background: #fcfaffeb;
+  }
+}
+
+/* The landing keeps its contrast while sharing the same blue/violet light. */
+.landing-shell {
+  position: relative;
+  isolation: isolate;
+  background: #0b1630;
+  --brand: #8f84ed;
+  --brand-dark: #6f71ca;
+  --brand-soft: #7775d91a;
+}
+.landing-shell .aurora-backdrop {
+  background:
+    radial-gradient(ellipse at 90% 30%, #244d7b80, transparent 58%),
+    radial-gradient(ellipse at 8% 12%, #64509538, transparent 38%),
+    radial-gradient(ellipse at 30% 100%, #163b6566, transparent 55%),
+    #0b1630;
+}
+.landing-shell .aurora-backdrop::before {
+  background:
+    radial-gradient(ellipse at 90% 35%, #32619799, transparent 42%),
+    radial-gradient(ellipse at 14% 72%, #536aaa66, transparent 40%);
+  opacity: .55;
+}
+.landing-shell .aurora-backdrop::after {
+  background: linear-gradient(105deg, #6b5aa526, #24528235 50%, #10284800);
+}
+.landing-shell .zen-hero-light {
+  background: linear-gradient(180deg, #2d568500, #315e9a90 32%, #6373b6a6 65%, #2d568500);
+}
+.landing-shell .zen-hero::after {
+  background: linear-gradient(transparent, #0b1630);
+}
+.landing-shell .zen-template-image,
+.landing-shell .zen-template:nth-child(3n + 2) .zen-template-image {
+  background: radial-gradient(ellipse at 70% 0, #526a9e38, transparent 80%), #102039;
+}
+.landing-shell .zen-ending::before {
+  background: radial-gradient(ellipse at 50% 75%, #365d9940, transparent 65%);
+}
+.landing-shell .site-footer {
+  background: #0b1630;
+}
+
+/* Shared rounded navigation rail across every workspace page. */
+.aurora-shell .workspace-sidebar-card {
+  margin: 16px 0 16px 16px;
+  padding: 26px 14px 20px;
+  top: 94px;
+  height: calc(100dvh - 110px);
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid #ffffffd9;
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 0% 0%, #e8e2f780, transparent 55%),
+    linear-gradient(165deg, #f9faff, #eaf0f8 70%);
+  color: #283b5a;
+  box-shadow: 0 16px 44px #10284812, inset 0 1px 0 #fff;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  scrollbar-width: thin;
+  scrollbar-color: #7985ad55 transparent;
+}
+.aurora-shell .workspace-sidebar-card .workspace-sidebar-heading { padding-inline: 12px; }
+.aurora-shell .workspace-sidebar-card .workspace-sidebar-heading .eyebrow { color: #b7addd; letter-spacing: .12em; }
+.aurora-shell .workspace-sidebar-card .workspace-sidebar-heading p { color: #97a7c5; font-size: 11px; line-height: 1.8; }
+.aurora-shell .workspace-sidebar-card nav { gap: 8px; margin-block: 22px; }
+.aurora-shell .workspace-sidebar-card nav a {
+  min-height: 44px;
+  padding: 12px;
+  gap: 11px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #566680;
+  background: transparent;
+  font-size: 11px;
+  line-height: 1.6;
+  transition: color .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.aurora-shell .workspace-sidebar-card nav a:hover,
+.aurora-shell .workspace-sidebar-card nav a:focus-visible {
+  color: #654b9d;
+  background: linear-gradient(100deg, #e9e2f6, #e5ecf8);
+  border-color: #d6cbea;
+}
+.aurora-shell .workspace-sidebar-card nav a.active {
+  color: #493c83;
+  background: linear-gradient(105deg, #e0d8f3, #d9e4f4);
+  border-color: #c9c6e3;
+  box-shadow: inset 0 1px 0 #ffffffb3, 0 4px 16px #263b6410;
+}
+.aurora-shell .workspace-sidebar-card nav a.active:hover {
+  color: #3f2e79;
+  background: linear-gradient(105deg, #d9cdef, #cfdff2);
+}
+.aurora-shell .workspace-sidebar-card nav a.active::before { display: none; }
+.aurora-shell .workspace-sidebar-card nav a .icon { width: 18px; height: 18px; }
+.aurora-shell .workspace-sidebar-card .workspace-sidebar-help {
+  padding: 16px;
+  border-radius: 17px;
+  background: linear-gradient(145deg, #8d76be1c, #6189c40d);
+  border-color: #acb5e325;
+}
+.aurora-shell .workspace-sidebar-card .sidebar-help-icon { background: #b69ae41a; color: #d0b6fa; box-shadow: none; }
+.aurora-shell .workspace-sidebar-card .workspace-sidebar-help strong { color: #dce4f5; font-size: 12px; }
+.aurora-shell .workspace-sidebar-card .workspace-sidebar-help p { color: #95a5c0; font-size: 10px; }
+.aurora-shell .workspace-sidebar-card .workspace-sidebar-help a { color: #c6b2ef; font-size: 10px; }
+.aurora-shell .workspace-sidebar-card .sidebar-explore { color: #60708c; font-size: 10px; margin-top: 20px; }
+.aurora-shell .workspace-sidebar-card :is(.workspace-sidebar-help a, .sidebar-explore):hover { color: #6748a4; }
+@media (max-width: 780px) {
+  .aurora-shell .workspace-sidebar-card {
+    position: relative;
+    top: auto;
+    height: auto;
+    margin: 10px 14px 0;
+    padding: 8px;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .aurora-shell .workspace-sidebar-card nav { display: flex; margin: 0; gap: 6px; }
+  .aurora-shell .workspace-sidebar-card nav a { min-height: 40px; padding: 9px 12px; }
+}
+
+.aurora-shell .workspace-sidebar-card nav { margin-top: 0; }
+.aurora-shell .workspace-sidebar-card .sidebar-explore { margin-top: auto; padding-top: 20px; }
+@media (max-width: 780px) {
+  .aurora-shell .workspace-sidebar-card .sidebar-explore { display: none; }
+}
+
+.aurora-shell .workspace-content > main { background: transparent; }
+.aurora-shell :is(.workspace-row, .profile-library-card, .resume-create-panel, .overview-welcome) {
+  background: linear-gradient(130deg, #ffffffdb, #eef1fbba);
+  border-color: #ffffffce;
+  box-shadow: 0 10px 30px #10284809;
+}
+.aurora-shell .workspace-stats article { background: #ffffffc7; border-color: #ffffffd9; }

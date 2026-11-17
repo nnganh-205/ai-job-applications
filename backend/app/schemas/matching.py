@@ -1,4 +1,5 @@
 from pydantic import Field
+from typing import Literal
 
 from backend.app.schemas.profile import StrictModel
 from backend.app.schemas.workflow import MatchResult
@@ -10,6 +11,8 @@ class MatchRequest(StrictModel):
 
 
 class MatchResponse(MatchResult):
+    input_type: Literal['profile', 'cv'] = 'profile'
+    input_id: str | None = None
     result_id: str
     profile_content_hash: str
     job_content_hash: str

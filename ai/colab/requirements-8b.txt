@@ -1,0 +1,13 @@
+# CUDA PyTorch / torchvision / xformers are installed first by notebook cell 1.
+unsloth==2026.11.5
+unsloth_zoo==2026.11.5
+transformers==4.56.2
+peft==0.18.1
+trl==0.23.1
+accelerate==1.10.1
+bitsandbytes==0.50.2
+datasets==4.3.0
+torchao==0.13.0
+numpy==2.2.6
+huggingface_hub==0.36.2
+sentencepiece==0.2.1

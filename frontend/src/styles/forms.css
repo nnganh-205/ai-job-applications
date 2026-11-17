@@ -1,0 +1,21 @@
+/* Shared form and navigation primitives; existing dashboard styles stay in use. */
+
+.site-header nav a{color:var(--muted);text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:600}
+.site-header nav a.active,.section-tabs a[aria-current=page]{background:#eaf0ff;color:var(--brand)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:18px}
+.form-grid label{display:flex;flex-direction:column;gap:6px;min-width:0}
+.form-grid label:has(input[type=checkbox]){flex-direction:row;align-items:center}
+.form-grid input,.form-grid textarea{width:100%;box-sizing:border-box}.form-grid input[type=checkbox]{width:auto}
+label small{font-weight:400;color:var(--muted)}
+.section-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}.section-tabs a{padding:9px 14px;border:1px solid var(--border);border-radius:9px;text-decoration:none;color:var(--ink)}
+.form-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:24px 0}
+fieldset{min-inline-size:0;max-width:100%;border:1px solid var(--border);border-radius:12px;padding:20px;margin:20px 0}legend{font-weight:700}
+.button-link{background:var(--brand);color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none}
+.landing{max-width:1120px}.landing>h1{font-size:clamp(32px,5vw,64px);line-height:1.12;letter-spacing:-.04em}.landing>p{max-width:650px}.landing>section{margin-top:70px}
+.workspace-footer{border-top:1px solid var(--border);padding:28px;text-align:center;color:var(--muted);font-size:14px;margin-top:60px}
+@media(max-width:700px){.site-header{flex-wrap:wrap;gap:16px}.site-header nav{display:flex;flex-wrap:wrap}.section-tabs a{padding:8px}fieldset{padding:12px}}
+
+textarea:focus-visible{outline:3px solid #87b7fa;outline-offset:2px}
+.landing>h1{background:#142c59;color:white;padding:40px;border-radius:18px}
+
+.button-link.secondary-button { background:#fff; color:var(--brand); border:1px solid var(--border); box-shadow:none; }

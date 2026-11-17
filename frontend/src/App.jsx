@@ -1,79 +1,197 @@
-import React, { useEffect, useState } from 'react';
-import { request } from './services/api.js';
-import Dashboard from './pages/Dashboard.jsx';
-import ProfileSessionPanel from './components/ProfileSessionPanel.jsx';
-import CVWorkspace from './components/CVWorkspace.jsx';
+import ResumeChat from "./features/resumes/ResumeChat.jsx";
+import ResumeNew, { LegacyResumeForm } from "./features/resumes/ResumeNew.jsx";
+import React, { useState, useEffect } from "react";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Routes,
+  Route,
+  Link,
+  useNavigate,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
+import Icon from "./components/ui/Icon.jsx";
+import WorkspaceNav from "./app/layouts/WorkspaceNav.jsx";
+import SiteHeader from "./app/layouts/SiteHeader.jsx";
+import AssistantPage from "./features/assistant/AssistantPage.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
+import WorkspacePage, {
+  CVGenerationPage,
+} from "./features/workspace/WorkspacePage.jsx";
+import InterviewPage from "./features/interviews/InterviewPage.jsx";
+import ApplicationsPage from "./features/applications/ApplicationsPage.jsx";
+import HomePage from "./features/home/HomePage.jsx";
+import EventsPage from "./features/events/EventsPage.jsx";
+import TemplateGallery from "./features/templates/TemplateGallery.jsx";
+import ResumeLibrary from "./features/resumes/ResumeLibrary.jsx";
+import ResumeEditor from "./features/resumes/ResumeEditor.jsx";
+import ProfileEditor from "./features/profile/ProfileEditor.jsx";
+import ProfileConversation from "./features/profile/ProfileConversation.jsx";
+import ImportProfile from "./features/profile/ImportProfile.jsx";
 
-export default function App() {
-  const [view, setView] = useState('jobs');
-  const [health, setHealth] = useState('Đang kiểm tra API…');
-  const [file, setFile] = useState(null);
-  const [draft, setDraft] = useState(null);
-  const [text, setText] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-
-  async function chatProfileSaved(id) {
-    try {
-      const saved = await request(`/api/profiles/${id}`);
-      setDraft(saved); setText(JSON.stringify(saved.profile, null, 2)); setConfirmed(true);
-    } catch (error) { setError(error.message); }
-  }
-
+function WorkspaceApp() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isWorkspace = pathname.startsWith("/workspace");
+  const isHome = pathname === "/";
+  const hasAurora = /^\/(jobs|templates|events)(\/|$)/.test(pathname) || isWorkspace;
   useEffect(() => {
-    request('/health').then(data => setHealth(data.status === 'ok' ? 'FastAPI đã kết nối' : 'API chưa sẵn sàng')).catch(error => setHealth(error.message));
-  }, []);
-
-  async function extract(event) {
-    event.preventDefault();
-    if (!file) return;
-    setBusy(true); setError(''); setDraft(null); setConfirmed(false);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname]);
+  const [profileId, setProfileId] = useState(() => {
     try {
-      const body = new FormData(); body.append('file', file);
-      const result = await request('/api/profiles/extract', { method: 'POST', body });
-      setDraft(result); setText(JSON.stringify(result.profile, null, 2));
-    } catch (error) { setError(error.message); }
-    finally { setBusy(false); }
-  }
-
-  async function confirm() {
-    setBusy(true); setError('');
+      return localStorage.getItem("kltn.confirmedProfileId") || null;
+    } catch {
+      return null;
+    }
+  });
+  function confirmed(id) {
+    setProfileId(id);
     try {
-      const profile = JSON.parse(text);
-      await request(`/api/profiles/${draft.thread_id}/confirm`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile }),
-      });
-      const saved = await request(`/api/profiles/${draft.thread_id}`);
-      setDraft(saved); setText(JSON.stringify(saved.profile, null, 2)); setConfirmed(true);
-    } catch (error) { setError(error.message); }
-    finally { setBusy(false); }
+      localStorage.setItem("kltn.confirmedProfileId", id);
+    } catch {}
   }
-
-  return <><header className="site-header"><a href="#" className="brand" onClick={event => { event.preventDefault(); setView('jobs'); }}>KLTN<span>Career Workspace</span></a><nav aria-label="Điều hướng chính"><button className={view === 'jobs' ? 'active' : ''} onClick={() => setView('jobs')}>Tìm việc</button><button className={view === 'profile' ? 'active' : ''} onClick={() => setView('profile')}>Hồ sơ của tôi</button><button className={view === 'cv' ? 'active' : ''} onClick={() => setView('cv')}>Tạo CV</button></nav><span className="api-status" role="status">{health}</span></header>
-    {view === 'jobs' ? <main className="dashboard-shell"><Dashboard confirmedProfileId={confirmed ? draft.thread_id : null} onOpenProfile={() => setView('profile')} onProfileConfirmed={chatProfileSaved} /></main> : view === 'cv' ? <main><CVWorkspace profileId={confirmed ? draft.thread_id : null} /></main> : <main>
-    <p className="eyebrow">KLTN · Mốc ngày 3</p>
-    <h1>Trích xuất hồ sơ từ CV</h1>
-    <p role="status">{health}</p>
-    <p>Upload PDF/DOCX có văn bản, tối đa 5 MB. Qwen local trích xuất thông tin; hồ sơ chỉ được lưu sau khi bạn xác nhận.</p>
-    <form onSubmit={extract}>
-      <label>CV của bạn <input type="file" accept=".pdf,.docx" disabled={busy} onChange={event => setFile(event.target.files[0] || null)} /></label>
-      <button disabled={!file || busy}>{busy ? 'Đang xử lý…' : 'Trích xuất bằng Qwen'}</button>
-    </form>
-    <button className="secondary-button" onClick={() => setShowChat(value => !value)}>Chưa có CV? Tạo hồ sơ qua trò chuyện</button>
-    {showChat && <ProfileSessionPanel mode="build" onProfileConfirmed={chatProfileSaved} onClose={() => setShowChat(false)} />}
-    {error && <p className="error" role="alert">{error}</p>}
-    {draft && <section>
-      <h2>{confirmed ? 'Master Profile đã lưu' : 'Kiểm tra bản nháp'}</h2>
-      <p>Phiên: {draft.thread_id}</p>
-      {draft.warnings.length > 0 && <details open><summary>Các mục cần kiểm tra ({draft.warnings.length})</summary><ul>{draft.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></details>}
-      <label htmlFor="profile">Hồ sơ bảy nhóm — bản kiểm tra JSON ngày 1</label>
-      <textarea id="profile" spellCheck={false} rows={24} value={text} disabled={busy || confirmed} onChange={event => setText(event.target.value)} />
-      {!confirmed && <button type="button" disabled={busy} onClick={confirm}>Tôi đã kiểm tra — xác nhận lưu hồ sơ</button>}
-      {confirmed && <p role="status">Đã xác nhận và đọc lại hồ sơ từ backend.</p>}
-    </section>}
-    {confirmed && <button onClick={() => setView('jobs')}>Đến Dashboard tìm việc và Matching →</button>}
-    <p className="note">Hồ sơ chỉ được lưu sau khi bạn xác nhận. Chọn công việc và xem Matching tại Dashboard.</p>
-  </main>}</>;
+  return (
+    <div className={isHome ? "landing-shell" : hasAurora ? "aurora-shell" : undefined}>
+      {(isHome || hasAurora) && <div className="aurora-backdrop" aria-hidden="true" />}
+      <a className="skip-link" href="#page-content">
+        Đến nội dung chính
+      </a>
+      <SiteHeader />
+      <div className={isWorkspace ? "workspace-layout" : "site-content"}>
+        {isWorkspace && <WorkspaceNav />}
+        <div
+          id="page-content"
+          tabIndex={-1}
+          className={isWorkspace ? "workspace-content" : "public-content"}
+        >
+          <Routes>
+            <Route path="/workspace/data-review" element={<Navigate replace to="/workspace/assistant" />} />
+            <Route path="/workspace/assistant" element={<AssistantPage />} />
+            <Route
+              path="/workspace/assistant/:id"
+              element={<AssistantPage />}
+            />
+            <Route path="/workspace/interviews" element={<InterviewPage />} />
+            <Route
+              path="/workspace/interviews/:id"
+              element={<InterviewPage />}
+            />
+            <Route
+              path="/workspace/applications"
+              element={<ApplicationsPage />}
+            />
+            <Route path="/templates" element={<TemplateGallery />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route
+              path="/jobs"
+              element={
+                <main className="dashboard-shell">
+                  <Dashboard
+                    confirmedProfileId={profileId}
+                    onOpenProfile={() => navigate("/workspace/resumes")}
+                    onProfileConfirmed={confirmed}
+                  />
+                </main>
+              }
+            />
+            <Route
+              path="/jobs/:id"
+              element={
+                <main className="dashboard-shell">
+                  <Dashboard
+                    confirmedProfileId={profileId}
+                    onOpenProfile={() => navigate("/workspace/resumes")}
+                    onProfileConfirmed={confirmed}
+                  />
+                </main>
+              }
+            />
+            <Route
+              path="/workspace/profile/conversation/:id"
+              element={<ProfileConversation onConfirmed={confirmed} />}
+            />
+            <Route path="/workspace" element={<WorkspacePage />} />
+            <Route
+              path="/workspace/profile"
+              element={<Navigate replace to="/workspace/resumes" />}
+            />
+            <Route
+              path="/workspace/profile/:id/:section"
+              element={<LegacyResumeForm />}
+            />
+            <Route
+              path="/workspace/import"
+              element={<ImportProfile onConfirmed={confirmed} />}
+            />
+            <Route
+              path="/workspace/resumes/generate"
+              element={<CVGenerationPage />}
+            />
+            <Route
+              path="/workspace/resumes/chat"
+              element={<ResumeChat onConfirmed={confirmed} />}
+            />
+            <Route path="/workspace/resumes/new" element={<ResumeNew />} />
+            <Route
+              path="/workspace/resumes/new/:id"
+              element={<ProfileEditor onConfirmed={confirmed} />}
+            />
+            <Route path="/workspace/resumes" element={<ResumeLibrary />} />
+            <Route
+              path="/workspace/resumes/:id/edit"
+              element={<ResumeEditor />}
+            />
+            <Route
+              path="*"
+              element={
+                <main>
+                  <h1>Không tìm thấy trang</h1>
+                  <Link to="/">Về trang chủ</Link>
+                </main>
+              }
+            />
+          </Routes>
+        </div>
+      </div>
+      {!isWorkspace && <footer className="site-footer">
+        {isWorkspace ? (
+          null
+        ) : (
+          <>
+            <div className="footer-top">
+              <div>
+                <p>
+                  Một không gian cho hành trình nghề nghiệp.
+                  <br />
+                  Bắt đầu từ những điều bạn đã làm.
+                </p>
+              </div>
+              <div>
+                <strong>Khám phá</strong>
+                <Link to="/jobs">Tìm việc làm</Link>
+                <Link to="/templates">Thư viện mẫu CV</Link>
+                <Link to="/events">Sự kiện nghề nghiệp</Link>
+              </div>
+              <div>
+                <strong>Không gian của bạn</strong>
+                <Link to="/workspace/resumes">Thư viện CV</Link>
+                <Link to="/workspace/resumes">CV của tôi</Link>
+                <Link to="/workspace/assistant">Trợ lý AI</Link>
+              </div>
+            </div>
+            <div className="footer-bottom">
+              <span>Thông tin thật. Lựa chọn của bạn.</span>
+            </div>
+          </>
+        )}
+      </footer>}
+    </div>
+  );
+}
+const router = createBrowserRouter([{ path: "*", element: <WorkspaceApp /> }]);
+export default function App() {
+  return <RouterProvider router={router} />;
 }

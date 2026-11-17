@@ -8,7 +8,8 @@ import httpx
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
-from backend.app.ai.agents.jd_agent import (
+from ai.agents.jd_extraction import CompactJD,SourceItem
+from ai.agents.jd_agent import (
     analyze_job_description,
     build_skill_items,
     extract_requirement_section,
@@ -16,8 +17,8 @@ from backend.app.ai.agents.jd_agent import (
     normalize_requirements,
     validate_evidence,
 )
-from backend.app.ai.graph import jd_workflow
-from backend.app.ai.llm.ollama_client import (
+from ai.graph import jd_workflow
+from ai.llm.ollama_client import (
     OllamaConnectionError,
     OllamaSchemaError,
     request_structured,
@@ -202,13 +203,11 @@ Lương cạnh tranh."""
             ],
         )
 
-    @patch("backend.app.ai.agents.jd_agent.request_structured")
-    def test_empty_skill_lists_use_focused_extraction(self, mock_request):
-        mock_request.side_effect = [
-            ExtractedJobRequirements(job_title="AI Engineer"),
-            ExtractedSkills(skills=["Python", "n8n"]),
-            ExtractedSkills(skills=["n8n"]),
-        ]
+    @patch("ai.agents.jd_agent.request_structured")
+    def test_compact_extraction_resolves_required_and_preferred_sources(self, mock_request):
+        mock_request.return_value = CompactJD(items=[
+            SourceItem(name='Python',line=3),
+            SourceItem(name='n8n',line=4)])
         result, warnings = analyze_job_description("""AI Engineer
 Yêu cầu ứng viên
 Có khả năng lập trình Python.
@@ -219,7 +218,7 @@ Lương cạnh tranh.""")
         self.assertEqual([item.name for item in result.preferred_skills], ["n8n"])
         self.assertEqual(warnings, [])
 
-    @patch("backend.app.ai.agents.jd_agent.request_structured")
+    @patch("ai.agents.jd_agent.request_structured")
     def test_english_sections_are_classified_separately(self, mock_request):
         raw_text = """AI Engineer Intern
 Responsibilities:
@@ -237,20 +236,13 @@ Experience working with FastAPI or similar backend frameworks.
 Basic experience with SQL and MongoDB for data management.
 What We Offer:
 Work with modern Software Engineering projects."""
-        mock_request.side_effect = [
-            ExtractedJobRequirements(job_title="AI Engineer Intern"),
-            ExtractedSkills(skills=[
-                "NLP",
-                "Natural Language Processing",
-                "Computer Vision",
-                "FastAPI",
-                "SQL",
-                "MongoDB",
-                "ReactJS",
-                "Engineering",
-            ]),
-            ExtractedSkills(skills=["NLP", "Computer Vision", "ReactJS"]),
-        ]
+        mock_request.return_value = CompactJD(items=[
+            SourceItem(name='NLP',line=9),
+            SourceItem(name='Computer Vision',line=11),
+            SourceItem(name='FastAPI',line=13),
+            SourceItem(name='SQL',line=14),
+            SourceItem(name='MongoDB',line=14),
+            SourceItem(name='ReactJS',line=4)])
         result, warnings = analyze_job_description(raw_text)
 
         self.assertNotIn("Engineering", [item.name for item in result.required_skills])
@@ -263,7 +255,7 @@ Work with modern Software Engineering projects."""
         self.assertEqual(len(result.responsibilities), 2)
         self.assertNotIn("What We Offer", extract_requirement_section(raw_text))
         self.assertNotIn("Requirements", extract_responsibility_section(raw_text))
-        self.assertTrue(any("Engineering" in warning for warning in warnings))
+        self.assertNotIn("Engineering", [item.name for item in result.preferred_skills])
 
     def test_normalization_does_not_add_requirements(self):
         requirements = empty_requirements()
@@ -271,27 +263,20 @@ Work with modern Software Engineering projects."""
         self.assertEqual(result.required_skills, [])
         self.assertEqual(result.preferred_skills, [])
 
-    @patch("backend.app.ai.agents.jd_agent.request_structured")
+    @patch("ai.agents.jd_agent.request_structured")
     def test_valid_jd_text_is_analyzed(self, mock_request):
-        mock_request.return_value = ExtractedJobRequirements(
-            job_title="Backend Developer",
-            required_skills=[RequirementItem(
-                name="Python",
-                requirement_type="required",
-                evidence="Python is required.",
-            )],
-        )
+        mock_request.return_value = CompactJD(items=[SourceItem(name='Python',line=1)])
         result, warnings = analyze_job_description(
             "Backend Developer. Python is required. Build and maintain APIs."
         )
         self.assertEqual(result.job_title, "Backend Developer")
         self.assertEqual(warnings, [])
 
-    @patch("backend.app.ai.agents.jd_agent.request_structured")
+    @patch("ai.agents.jd_agent.request_structured")
     def test_invalid_schema_is_retried_once(self, mock_request):
         mock_request.side_effect = [
             OllamaSchemaError("invalid schema"),
-            ExtractedJobRequirements(job_title="Backend Developer"),
+            CompactJD(items=[]),
         ]
         result, _warnings = analyze_job_description(
             "Backend Developer. Build and maintain Python APIs for the product."
@@ -299,7 +284,7 @@ Work with modern Software Engineering projects."""
         self.assertEqual(result.job_title, "Backend Developer")
         self.assertEqual(mock_request.call_count, 2)
 
-    @patch("backend.app.ai.graph.jd_workflow.analyze_job_description")
+    @patch("ai.graph.jd_workflow.analyze_job_description")
     def test_jd_graph_runs_without_profile_agent(self, mock_analyze):
         requirements = empty_requirements()
         mock_analyze.return_value = (requirements, [])
@@ -309,7 +294,7 @@ Work with modern Software Engineering projects."""
         self.assertEqual(state["status"], "completed")
         self.assertIn("job_requirements", state)
 
-    @patch("backend.app.ai.llm.ollama_client.httpx.post")
+    @patch("ai.llm.ollama_client.httpx.post")
     def test_ollama_not_running(self, mock_post):
         mock_post.side_effect = httpx.ConnectError("connection refused")
         with self.assertRaises(OllamaConnectionError):
