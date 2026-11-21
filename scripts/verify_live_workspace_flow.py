@@ -22,6 +22,7 @@ def main():
     from scripts.verify_assistant_postgres import cleanup
     owned={'records':[],'tasks':[],'profiles':[],'threads':[]};job_id=None;analysis_ids=[];match_ids=[]
     manifest={'synthetic_fixture':True,'stages':[]};started=time.monotonic();out=Path('output/evaluation/live-workspace-flow.json')
+    out.parent.mkdir(parents=True, exist_ok=True)
     def stage(name,**details):
         manifest['stages'].append({'name':name,'elapsed':round(time.monotonic()-started,2),**details});out.write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
     def checked(r):

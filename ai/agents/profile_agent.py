@@ -5,6 +5,7 @@ import json
 from urllib.parse import urlsplit
 
 from backend.app.schemas.profile import MasterProfile, SkillGroup, SourceEvidence
+from ai.agents.profile_sections import section_kind
 from ai.llm.profile_extractor import (
     extract_missing_job_titles,
     extract_profile_with_retry,
@@ -184,6 +185,8 @@ def fill_missing_job_titles(profile: MasterProfile, resume_text: str) -> MasterP
     for index, experience in enumerate(profile.experience):
         span = _entry_span(resume_text, experience.company, companies, previous_line=True)
         block = resume_text[span[0]:span[1]] if span else None
+        if not experience.job_title and experience.role and block and _normalize(experience.role) in _normalize(block):
+            experience.job_title = experience.role
         title_is_supported = (
             experience.job_title
             and _normalize(experience.job_title) in source
@@ -191,12 +194,15 @@ def fill_missing_job_titles(profile: MasterProfile, resume_text: str) -> MasterP
         )
         if not title_is_supported:
             experience.job_title = None
+            if span is None:
+                continue
             missing_experiences.append({
                 "experience_index": index,
                 "company": experience.company,
                 "start_date": experience.start_date,
                 "end_date": experience.end_date,
                 "description": experience.description,
+                "source_excerpt": block,
             })
 
     if not missing_experiences:
@@ -218,45 +224,10 @@ def fill_missing_job_titles(profile: MasterProfile, resume_text: str) -> MasterP
 
 
 def fill_explicit_skill_section(profile: MasterProfile, resume_text: str) -> MasterProfile:
-    """Recover only verbatim list items under a Skills heading, never from projects."""
-    active = False
-    existing = {_normalize(item) for group in profile.skills for item in group.items}
-    missing: dict[str, list[str]] = {}
-    end_headings = {"experience", "education", "projects", "involvement", "summary", "contact", "kinh nghiệm", "học vấn", "dự án", "hoạt động", "tóm tắt", "giới thiệu", "chứng chỉ", "certifications", "references"}
-    for raw_line in resume_text.splitlines():
-        line = raw_line.strip()
-        heading = re.fullmatch(r"(?:technical\s+skills|skills|kỹ\s+năng)(?:\s*[:：]\s*(.*))?", line, re.IGNORECASE)
-        if heading:
-            active = True
-            line = (heading.group(1) or "").strip()
-        elif active and _normalize(line).rstrip(":") in end_headings:
-            break
-        if not active or not line:
-            continue
-        group_name = "Other Skills"
-        if ":" in line or "：" in line:
-            group_name, line = re.split(r"[:：]", line, maxsplit=1)
-            group_name = group_name.strip() or "Other Skills"
-        # Commas inside parentheses belong to a skill, e.g. "LLMs (Llama, Qwen)".
-        parts = []
-        start = depth = 0
-        for index, char in enumerate(line):
-            if char in "([":
-                depth += 1
-            elif char in ")]":
-                depth = max(0, depth - 1)
-            elif char in ",;•" and depth == 0:
-                parts.append(line[start:index])
-                start = index + 1
-        parts.append(line[start:])
-        for item in parts:
-            item = re.sub(r"^[-*\s]+", "", item).strip()
-            # Do not split natural-language claims into inferred skill names.
-            if item and len(item) <= 100 and _normalize(item) not in existing:
-                missing.setdefault(group_name, []).append(item)
-                existing.add(_normalize(item))
-    for group_name, items in missing.items():
-        profile.skills.append(SkillGroup(group=group_name, items=items))
+    from ai.agents.profile_sections import explicit_skills
+    groups = explicit_skills(resume_text)
+    if groups is not None:
+        profile.skills = groups
     return profile
 
 
@@ -314,6 +285,14 @@ def _entry_span(text: str, anchor: str | None, anchors: list[str], *, previous_l
     if not anchor:
         return None
     matches = _source_matches(anchor, text)
+    if len(matches) > 1:
+        expected = 'experience' if previous_line else 'education'
+        scoped = []
+        for match in matches:
+            preceding = [section_kind(line) for line in text[:match.start()].splitlines()]
+            last = next((kind for kind in reversed(preceding) if kind), None)
+            if last == expected: scoped.append(match)
+        matches = scoped
     if len(matches) != 1:
         return None
     lines = text.splitlines(keepends=True)
@@ -321,11 +300,12 @@ def _entry_span(text: str, anchor: str | None, anchors: list[str], *, previous_l
     for line in lines:
         offsets.append(offsets[-1] + len(line))
     target = text[:matches[0].start()].count("\n")
-    headings = {"experience", "education", "projects", "skills", "involvement", "summary", "kinh nghiệm", "học vấn", "dự án", "kỹ năng", "hoạt động", "tóm tắt"}
     start = target
-    if previous_line and target > 0 and _normalize(lines[target - 1]).rstrip(":") not in headings:
-        start -= 1
-    end = min(len(lines), target + 12)
+    if previous_line and target > 0:
+        preceding = target - 1
+        while preceding > 0 and not lines[preceding].strip(): preceding -= 1
+        if not section_kind(lines[preceding]): start = preceding
+    end = len(lines)
     for other in anchors:
         if _normalize(other) == _normalize(anchor):
             continue
@@ -334,7 +314,7 @@ def _entry_span(text: str, anchor: str | None, anchors: list[str], *, previous_l
             if other_line > target:
                 end = min(end, max(target + 1, other_line - int(previous_line)))
     for index in range(target + 1, end):
-        if _normalize(lines[index]).rstrip(":") in headings:
+        if section_kind(lines[index]):
             end = index
             break
     return offsets[start], offsets[end]
@@ -343,7 +323,7 @@ def _entry_span(text: str, anchor: str | None, anchors: list[str], *, previous_l
 def assign_profile_metadata(profile: MasterProfile, *, preserve_ids: bool = False) -> MasterProfile:
     """Derive IDs and normalized skill names in Python, never invent profile facts."""
     assigned = set()
-    for section in ("experience", "project", "education", "involvement", "skills"):
+    for section in ("experience", "project", "education", "involvement", "skills", "certifications", "awards", "references"):
         for entry in getattr(profile, section):
             content = json.dumps(entry.model_dump(exclude={"id", "normalized_items"}), ensure_ascii=False, sort_keys=True)
             if not preserve_ids or not entry.id:
@@ -426,5 +406,28 @@ def validate_against_source(profile: MasterProfile, resume_text: str) -> list[st
             warnings.append(
                 f"Cần kiểm tra project[{index}]: tên dự án trùng tên công ty"
             )
+    active = None
+    missing = {}
+    kinds = {'experience':'experience', 'project':'project', 'education':'education',
+             'involvement':'involvement', 'certifications':'certifications', 'awards':'awards', 'references':'references'}
+    extracted = {kind:_normalize(' '.join(value for entry in getattr(profile, field)
+                                         for _,value in _string_values(entry.model_dump()))) for kind,field in kinds.items()}
+    present = set()
+    for line in resume_text.splitlines():
+        kind = section_kind(line)
+        if kind:
+            active = kind
+            present.add(kind)
+            continue
+        if active not in kinds: continue
+        bullet = re.match(r'^\s*[•●▪◦*-]\s+(.{20,})$', line)
+        if bullet and not re.match(r'(?:GPA|CGPA|CPA|ĐTB)\s*:', bullet.group(1), re.I):
+            if _normalize(bullet.group(1)) not in extracted[active]:
+                missing[active] = missing.get(active, 0) + 1
+    for kind in present & kinds.keys():
+        if not getattr(profile, kinds[kind]):
+            warnings.append(f'Cần kiểm tra {kind}: CV gốc có mục này nhưng kết quả trích xuất đang trống.')
+        elif missing.get(kind):
+            warnings.append(f'Cần kiểm tra {kind}: còn {missing[kind]} dòng nội dung nguồn chưa được đối chiếu trong đúng mục.')
     return warnings
 

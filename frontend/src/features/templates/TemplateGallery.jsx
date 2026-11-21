@@ -2,13 +2,15 @@ import React, { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Icon from "../../components/ui/Icon.jsx";
 import CVPreviewFrame from "../../components/ui/CVPreviewFrame.jsx";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
 const categories = {
   all: "Tất cả",
   basic: "Đơn giản",
+  professional: "Chuyên nghiệp",
   modern: "Hiện đại",
-  creative: "Sáng tạo",
-  academic: "Học thuật",
+  impressive: "Ấn tượng",
+  harvard: "Harvard",
+  ats: "ATS",
 };
 export default function TemplateGallery() {
   const [items, setItems] = useState([]),
@@ -54,14 +56,9 @@ export default function TemplateGallery() {
     <main className="template-gallery">
       <div className="gallery-hero">
         <div className="gallery-heading">
-          <p className="eyebrow">Bắt đầu bằng một thiết kế phù hợp</p>
-          <h1>
-            Nội dung của bạn.
-            <br />
-            Một diện mạo mới.
-          </h1>
+          <h1>Chọn mẫu CV</h1>
           <p>
-            Sáu bố cục nguyên bản để trình bày kinh nghiệm rõ ràng. Đổi mẫu bất
+            {items.length} mẫu CV, chia thành {new Set(items.map(item => item.category)).size} nhóm phong cách. Đổi mẫu bất
             cứ lúc nào trong editor mà không mất nội dung.
           </p>
         </div>
@@ -69,7 +66,7 @@ export default function TemplateGallery() {
           <img src="/templates/previews/classic.png" alt="" />
           <img src="/templates/previews/modern.png" alt="" />
           <span>
-            <Icon name="check" size={14} /> Sáu thiết kế · Nội dung của bạn
+            <Icon name="check" size={14} /> {items.length} mẫu · {new Set(items.map(item => item.category)).size} phong cách
           </span>
         </div>
       </div>
@@ -85,7 +82,7 @@ export default function TemplateGallery() {
           />
         </label>
         <div className="template-categories" aria-label="Nhóm mẫu CV">
-          {Object.entries(categories).map(([key, name]) => (
+          {Object.entries(categories).filter(([key]) => key === "all" || items.some((item) => item.category === key)).map(([key, name]) => (
             <button
               key={key}
               aria-pressed={category === key}
@@ -120,9 +117,10 @@ export default function TemplateGallery() {
             <div className="template-card-body">
               <div className="template-title">
                 <h2>{t.name}</h2>
-                <span>{t.layout === "two-column" ? "Hai cột" : "Một cột"}</span>
+                <span>{t.layout === "three-column" ? "Ba cột thông tin" : t.layout === "two-column" ? "Hai cột" : "Một cột"}</span>
               </div>
               <p>{t.description}</p>
+              {t.source_url && <a className="text-button" href={t.source_url} target="_blank" rel="noopener noreferrer">Xem mẫu gốc trên TopCV ↗</a>}
               <div className="form-actions">
                 <Link
                   className="button-link"
@@ -160,9 +158,11 @@ export default function TemplateGallery() {
               Đóng xem trước
             </button>
           </div>
-          <p>Nội dung minh họa, không phải hồ sơ cá nhân.</p>
+          <p>Nội dung dùng để xem trước bố cục CV.</p>
           <CVPreviewFrame
             title={"Mẫu CV " + preview.name}
+            pageWidth={preview.page_width}
+            pageHeight={preview.page_height}
             src={"/api/cv/templates/" + preview.id + "/preview"}
           />
           <Link

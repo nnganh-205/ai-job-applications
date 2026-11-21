@@ -22,7 +22,7 @@ class CVEntry(StrictModel):
 
 
 class CVSection(StrictModel):
-    kind: Literal["experience", "project", "education", "involvement", "skills"]
+    kind: Literal["experience", "project", "education", "involvement", "skills", "certifications", "awards", "references"]
     heading: str
     entries: list[CVEntry]
 

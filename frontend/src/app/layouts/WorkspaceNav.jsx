@@ -3,8 +3,7 @@ import { NavLink, Link, useLocation } from "react-router-dom";
 import Icon from "../../components/ui/Icon.jsx";
 const items = [
   ["/workspace", "Tổng quan", "grid", true],
-  ["/workspace/resumes", "Thư viện CV", "file"],
-  ["/workspace/assistant", "Trợ lý AI", "spark"],
+  ["/workspace/assistant", "Trợ lý AI", "chat"],
   ["/workspace/interviews", "Luyện phỏng vấn", "chat"],
   ["/workspace/applications", "Theo dõi ứng tuyển", "briefcase"],
 ];

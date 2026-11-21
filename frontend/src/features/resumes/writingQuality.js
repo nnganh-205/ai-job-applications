@@ -2,9 +2,11 @@ const linesOf = (e) =>
   [
     ...(e.description || []),
     ...(e.responsibilities || []),
-    ...(e.contributions || []),
     ...(e.details || []),
   ].filter((x) => typeof x === "string" && x.trim());
+export const bulletWordLimit = (text) =>
+  /[ăâđêôơưàáãèéìíòóõùúý\u1ea0-\u1ef9]/i.test(text) ? 60 : 38;
+
 export function writingQuality(entry = {}) {
   const lines = linesOf(entry),
     words = (t) => t.trim().split(/\s+/).length;
@@ -46,8 +48,8 @@ export function writingQuality(entry = {}) {
     {
       id: "length",
       label: "Độ gọn của bullet",
-      bad: lines.map((t, i) => (words(t) > 38 ? i + 1 : null)).filter(Boolean),
-      help: "Mỗi bullet một ý chính. Câu quá dài nên tách hoặc viết gọn.",
+      bad: lines.map((t, i) => (words(t) > bulletWordLimit(t) ? i + 1 : null)).filter(Boolean),
+      help: "Mỗi bullet một ý chính; tối đa 60 đơn vị cách nhau bằng khoảng trắng với tiếng Việt, 38 với tiếng Anh. Câu dài nên tách hoặc viết gọn.",
     },
     {
       id: "specific",
@@ -68,10 +70,14 @@ export function writingQuality(entry = {}) {
     status: !lines.length ? "empty" : c.bad.length ? "warning" : "pass",
   }));
   const passed = checks.filter((c) => c.status === "pass").length;
+  const deduction = checks.reduce(
+    (total, check) => total + (check.status === "warning" ? (check.id === "punctuation" ? 5 : 20) : 0),
+    0,
+  );
   return {
     lines,
     checks,
-    score: lines.length ? Math.round((passed / checks.length) * 100) : 0,
+    score: lines.length ? Math.max(0, 100 - deduction) : 0,
     passed,
     total: checks.length,
     hasMetric: lines.some((t) =>
@@ -88,6 +94,9 @@ export function entryTitle(entry, section, index) {
     entry.institution ||
     entry.activity_name ||
     entry.group ||
+    entry.name ||
+    entry.title ||
+    entry.full_name ||
     `${{ project: "Dự án", experience: "Kinh nghiệm", education: "Học vấn", involvement: "Hoạt động", skills: "Nhóm kỹ năng" }[section] || "Thông tin"} ${index + 1}`
   );
 }
@@ -98,7 +107,6 @@ export function quickEditorialEdits(entry, issue) {
   for (const field of [
     "description",
     "responsibilities",
-    "contributions",
     "details",
   ]) {
     const original = entry[field];

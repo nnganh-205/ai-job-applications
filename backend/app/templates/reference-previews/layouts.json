@@ -1,0 +1,92 @@
+[
+  {
+    "template_id": "simple",
+    "name": "Đơn giản 01 · Avatar tròn",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.45629.pdf",
+    "sha256": "2f0c04638f6bd87a9c6b6bec22f2009c53c6d1dbea412c37d27c0d5a6d7afbff"
+  },
+  {
+    "template_id": "clean",
+    "name": "Đơn giản 02 · Ba cột thông tin",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.45601.pdf",
+    "sha256": "a879033ca3a10d59e32d56822a3c20b53324f11636640e75b4d9b51cb29692c1"
+  },
+  {
+    "template_id": "minimal",
+    "name": "Đơn giản 03 · Tiêu đề nền xám",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.45546.pdf",
+    "sha256": "e80bcfb54fd06f8a52268e5dce635cc4d3af5e1a847cc9db237a2721d7673c07"
+  },
+  {
+    "template_id": "compact",
+    "name": "Đơn giản 04 · Đen trắng",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.45138.pdf",
+    "sha256": "8a7593a99746209cbfa3671682f84de8393e8792ff10428697fae2a1f5bcb3c4"
+  },
+  {
+    "template_id": "executive",
+    "name": "Chuyên nghiệp 01 · Tím nhạt",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.50227.pdf",
+    "sha256": "ea8b1b520a0d0c0be36b44cf80aefd10623ea338f362c6b2a502ed91eb5f88d0"
+  },
+  {
+    "template_id": "corporate",
+    "name": "Chuyên nghiệp 02 · Xám đen",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.50208.pdf",
+    "sha256": "5610017a6cd19031c90209bdb81e08bdf7a7706a2c560a4caa00f0ca5cc9e624"
+  },
+  {
+    "template_id": "consultant",
+    "name": "Chuyên nghiệp 03 · Xanh rêu",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.50150.pdf",
+    "sha256": "d4dce3fd0a30b699785242c9f2697a44e2605b5b5b5f663d1da50fc1092d5216"
+  },
+  {
+    "template_id": "precision",
+    "name": "Chuyên nghiệp 04 · Nâu trầm",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.50133.pdf",
+    "sha256": "378ff8c2bf019c2ac439d88cc359228fdbd880df9435f0632a5b1c0526fb7644"
+  },
+  {
+    "template_id": "modern",
+    "name": "Hiện đại 01 · Dải xanh",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.51131.pdf",
+    "sha256": "61d6327c98e299d09f4a89ee376480c3cac72cacdd7de4895fbdbf76a89b29a5"
+  },
+  {
+    "template_id": "sidebar",
+    "name": "Hiện đại 02 · Khối xanh đậm",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.51106.pdf",
+    "sha256": "ab52e984d69ac1c75c219e56b04fb6cad6848fda07122ff5f6edf9790b972822"
+  },
+  {
+    "template_id": "metro",
+    "name": "Hiện đại 03 · Cột xanh nhạt",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.51052.pdf",
+    "sha256": "b1bded579a5851265f7635fe406698111a54ea8807f1c28a73cd9a781f4ae71e"
+  },
+  {
+    "template_id": "split",
+    "name": "Hiện đại 04 · Hồng nhạt",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.51040.pdf",
+    "sha256": "61c4f3867bfbcfe75b9942edd91a4acbc67c3e101efd878bdc900a568272f015"
+  },
+  {
+    "template_id": "classic",
+    "name": "Harvard 01 · Jake Ryan",
+    "filename": "3.pdf",
+    "sha256": "a09eb1f7a29c3991b04e52fc47d191a4a6067b18ebc071196a7e8488af5aa38c"
+  },
+  {
+    "template_id": "academic",
+    "name": "Harvard 02 · Dòng thời gian",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.51800.pdf",
+    "sha256": "3be249c3323d40698c565ce52712154800ce5e14fedc0643504ec34c34fd3be3"
+  },
+  {
+    "template_id": "harvard",
+    "name": "Harvard 03 · Cổ điển",
+    "filename": "Anh-Ngoc-TopCV.vn-181126.51814.pdf",
+    "sha256": "d8aec5a5356b299229fe32893d7190bb3168eb0e1fc2ebdee4fc5cbca191f321"
+  }
+]

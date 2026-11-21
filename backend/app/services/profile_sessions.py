@@ -1,5 +1,6 @@
 """API orchestration for Agent 4 and profile chat; no CV facts are silently saved."""
 
+from backend.app.core.workspace import graph_config
 from threading import RLock
 from uuid import uuid4
 
@@ -20,7 +21,7 @@ def graph_for(session_id):
     index = records.get("sessions", session_id)
     if index is None:
         raise LookupError("Không tìm thấy phiên chat")
-    return (update_graph if index["mode"] == "update" else chat_graph), {"configurable": {"thread_id": session_id}}
+    return (update_graph if index["mode"] == "update" else chat_graph), graph_config(session_id)
 
 
 def view_session(session_id: str) -> SessionView:
@@ -73,7 +74,7 @@ def start_update(request: UpdateStart, session_id=None) -> SessionView:
              "messages": [], "warnings": ["Phiên này hỏi tối đa 5 yêu cầu; bạn có thể mở phiên tiếp theo cho các mục còn lại."] if len(queue) > 5 else [], "status": "running"}
     if deferred:
         state["warnings"].append("Phiên này bổ sung kỹ năng/kinh nghiệm. Các mục học vấn/chứng chỉ chưa có bằng chứng vẫn giữ trong Gap Analysis, không tự thêm vào dự án.")
-    config = {"configurable": {"thread_id": session_id}}
+    config = graph_config(session_id)
     if not queue:
         update_graph.update_state(config, {**state, "status": "completed"}, as_node="next")
     else:
@@ -87,7 +88,7 @@ def start_build() -> SessionView:
     chat_graph.invoke({"session_id": session_id, "mode": "build", "status": "pending_answer",
                        "action_id": f"{session_id}:0:message", "messages": [],
                        "question": "Bạn hãy giới thiệu thông tin liên hệ, kinh nghiệm, dự án, học vấn và kỹ năng có thật. Có thể bổ sung nhiều lượt; hồ sơ chỉ lưu khi bạn xác nhận."},
-                      {"configurable": {"thread_id": session_id}})
+                      graph_config(session_id))
     return view_session(session_id)
 
 

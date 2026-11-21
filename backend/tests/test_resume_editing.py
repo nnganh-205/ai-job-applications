@@ -27,6 +27,49 @@ class ResumeEditingTests(unittest.TestCase):
     def finish(self, cv, draft, event='complete'):
         return editing.complete(cv['resume_id'], ResumeEditComplete(draft_id=draft['draft_id'], expected_version=draft['version'], event_id=event))
 
+    def test_project_stack_and_repository_do_not_become_work_bullets_on_reopen(self):
+        from backend.tests.test_project_metadata import project_profile
+        from backend.app.schemas.resume import ResumeStart
+        profile=project_profile()
+        profiles.save_master_profile('metadata_fixture',profile,profiles.DEFAULT_STORAGE_DIR)
+        cv=resumes.start(ResumeStart(profile_id='metadata_fixture'))
+        draft=self.begin(cv)
+        entry=draft['profile']['project'][0]
+        self.assertEqual(entry['description'],profile.project[0].description)
+        self.assertEqual(entry['technologies'],profile.project[0].technologies)
+        self.assertEqual(entry['github_url'],profile.project[0].github_url)
+
+    def test_legacy_standalone_tool_bullets_do_not_block_contact_edit(self):
+        from ai.agents.cv_agent import HIDDEN_SOURCE_FIELDS
+        from backend.app.schemas.resume import ResumeStart
+        profile = MasterProfile(contact={'full_name':'Fixture'}, experience=[{
+            'id':'job', 'job_title':'Developer', 'company':'ABC',
+            'description':['Built APIs with Python.'], 'technologies_used':['Python', 'Docker']}],
+            project=[], education=[], involvement=[], skills=[])
+        profiles.save_master_profile('fixture',profile,profiles.DEFAULT_STORAGE_DIR)
+        with patch.dict(HIDDEN_SOURCE_FIELDS, {'experience':set()}):
+            cv = resumes.start(ResumeStart(profile_id='fixture'))
+        self.assertEqual(len(cv['document']['sections'][0]['entries'][0]['bullets']),3)
+        draft = self.save(cv,self.begin(cv),full_name='Edited')
+        result = self.finish(cv,draft)
+        self.assertEqual([b['text'] for b in result['document']['sections'][0]['entries'][0]['bullets']],['Built APIs with Python.'])
+
+    def test_legacy_project_tools_reopen_as_one_grounded_line(self):
+        cv = self.create()
+        source = profiles.load_profile_record('fixture', profiles.DEFAULT_STORAGE_DIR)
+        source.profile.project[0].technologies = ['Docker','Git']
+        profiles.save_master_profile('legacy_fixture', source.profile, profiles.DEFAULT_STORAGE_DIR)
+        for key in ['document','baseline']:
+            cv[key]['source_profile_revision_id'] = 'legacy_fixture'
+            cv[key]['sections'][0]['entries'][0]['bullets'] += [
+                {'text':name,'source_refs':[f'/project/0/technologies/{index}']}
+                for index,name in enumerate(['Docker','Git'])]
+        resumes.write(cv)
+        result = self.finish(cv,self.save(cv,self.begin(cv),full_name='Edited'))
+        texts = [b['text'] for b in result['document']['sections'][0]['entries'][0]['bullets']]
+        self.assertEqual(texts[-1],'Docker, Git')
+        self.assertNotIn('Docker',texts)
+
     def test_reopen_reuses_saved_draft_even_after_reload(self):
         cv = self.create(); first = self.begin(cv)
         saved = self.save(cv, first, phone='0900000000')

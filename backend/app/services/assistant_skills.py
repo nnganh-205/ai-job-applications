@@ -9,9 +9,9 @@ CERT = re.compile(r'\b(ielts|toeic|toefl|jlpt|topik|hsk|delf|dalf|goethe|cambrid
 LEVEL = re.compile(r'\b(a[12]|b[12]|c[12]|n[1-5]|co ban|giao tiep|doc hieu|thanh thao|trung cap|so cap|cao cap|luu loat|nghe|noi|doc|viet)\b')
 GROUPS = {
     'Ngôn ngữ lập trình': {'python','pyton','javascript','typescript','java','c++','c#','sql','go','rust'},
-    'AI & học máy': {'pytorch','tensorflow','cnn','transformer','transformers','rag','prompt engineering','promt engineering','computer vision','machine learning','deep learning'},
-    'Xử lý dữ liệu': {'numpy','pandas','excel','power bi','tableau'},
-    'Framework & công cụ phát triển': {'langgraph','langchain','react','fastapi','django','flask','git','docker','node.js'},
+    'Framework & thư viện': {'pytorch','tensorflow','numpy','pandas','scikit-learn','sklearn','hugging face','huggingface','unsloth','langgraph','langchain','react','fastapi','django','flask','node.js','transformers'},
+    'Công cụ phát triển': {'git','docker','google earth engine','gee','qgis','jupyter','jupyter notebook','vs code','visual studio code','google colab','colab','mlflow','cuda','excel','power bi','tableau'},
+    'AI & học máy': {'cnn','transformer','rag','prompt engineering','promt engineering','computer vision','machine learning','deep learning'},
     'Kỹ năng làm việc': {'giao tiep','lam viec nhom','thuyet trinh','quan ly thoi gian','giai quyet van de'},
 }
 
@@ -26,9 +26,12 @@ def language_key(entry):
 def category(item, fallback=None):
     plain=fold(item).strip()
     if LANGUAGE.search(plain): return 'Ngoại ngữ · '+LANGUAGE_LABELS[LANGUAGE.search(plain).group()]
+    base = plain.split('(',1)[0].strip()
     for label,words in GROUPS.items():
-        if plain in words: return label
-    return fallback or 'Kỹ năng khác'
+        if plain in words or base in words: return label
+    aliases={'ngon ngu lap trinh':'Ngôn ngữ lập trình','framework & thu vien':'Framework & thư viện',
+             'framework & libraries':'Framework & thư viện','cong cu phat trien':'Công cụ phát triển'}
+    return aliases.get(fold(fallback or '').strip(),fallback) or 'Kỹ năng khác'
 
 
 def group_skills(entries):
@@ -99,11 +102,48 @@ def skill_answer(profile,path,text):
         if parts[2]=='certificate' and not CERT.search(plain): return None
         return IntentDecision(intent='build_cv',reply='Mình đã ghi nhận thông tin ngoại ngữ bạn vừa cung cấp.',updates=[ProfilePatch(section='skills',index=int(parts[1]),field='items',operation='append',value=[text.strip()],evidence=text)])
     if path in {'skills','skills.languages'}:
+        labelled = labelled_skills(text)
+        if labelled:
+            updates=[]
+            for offset,(label,items) in enumerate(labelled):
+                index=len(profile['skills'])+offset
+                updates.extend([
+                    ProfilePatch(section='skills',index=index,field='group',value=label,evidence=text),
+                    ProfilePatch(section='skills',index=index,field='items',value=items,evidence=text),
+                ])
+            return IntentDecision(intent='build_cv',updates=updates)
         # Clear skill lists use only verbatim items. Unknown or mixed statements go to the model.
         raw=re.sub(r'^(?:(?:mình|tôi|em)\s+)?(?:dùng được|sử dụng được|biết|dùng)\s+', '',text.strip(),flags=re.I)
-        items=[x.strip() for x in re.split(r'[,;\n]+',raw) if x.strip()]
+        items=skill_items(raw)
         known=set().union(*GROUPS.values())
-        if not items or not all(fold(x) in known or LANGUAGE.search(fold(x)) for x in items): return None
+        if not items or not all(fold(x).split('(',1)[0].strip() in known or LANGUAGE.search(fold(x)) for x in items): return None
         start=len(profile['skills'])
         return IntentDecision(intent='build_cv',updates=[ProfilePatch(section='skills',index=start,field='items',value=items,evidence=text)])
     return None
+
+
+def labelled_skills(text):
+    headers=list(re.finditer(r'(Ngôn ngữ lập trình|Framework\s*&\s*(?:thư viện|libraries)|Công cụ phát triển)\s*:',text,re.I))
+    if not headers or text[:headers[0].start()].strip(' ,;\n'):
+        return None
+    groups=[]
+    for i,header in enumerate(headers):
+        content=text[header.end():headers[i+1].start() if i+1<len(headers) else len(text)].strip(' ,;\n')
+        items=skill_items(content)
+        if not items:return None
+        groups.append((header[1].strip(),items))
+    return groups if len(groups)<=10 else None
+
+
+def skill_items(content):
+    items=[];start=depth=0
+    for i,char in enumerate(content):
+        if char in '([':depth+=1
+        elif char in ')]':depth=max(0,depth-1)
+        elif char in ',;\n' and depth==0:
+            value=content[start:i].strip()
+            if value:items.append(value)
+            start=i+1
+    value=content[start:].strip()
+    if value:items.append(value)
+    return items

@@ -16,18 +16,26 @@ from backend.app.api.profile_drafts import router as profile_drafts_router
 from backend.app.api.resumes import router as resumes_router
 from backend.app.api.tasks import router as tasks_router
 from backend.app.api.assets import router as assets_router
-from backend.app.api.events import router as events_router
 from backend.app.api.applications import router as applications_router
 from backend.app.api.interviews import router as interviews_router
 from backend.app.api.assistant import router as assistant_router
 from backend.app.db.database import DatabaseUnavailable
 from backend.app.core.config import PROJECT_ROOT
+from backend.app.api.auth import router as auth_router
+from backend.app.api.admin import router as admin_router
+from backend.app.core.auth_middleware import AuthMiddleware
 
 
 @asynccontextmanager
 async def lifespan(app):
     from backend.app.db import database
     from backend.app.services.tasks import LocalWorker
+    if database.enabled():
+        database.migrate()
+    from backend.app.services.administration import bootstrap_admin
+    from backend.app.services.knowledge import initialize_sources
+    bootstrap_admin()
+    initialize_sources()
     worker=LocalWorker() if database.enabled() and os.getenv('KLTN_WORKER_ENABLED','1')=='1' else None
     if worker:worker.start()
     try:yield
@@ -36,6 +44,9 @@ async def lifespan(app):
 
 
 app = FastAPI(title="KLTN Job Search API", version="0.1.0",lifespan=lifespan)
+app.add_middleware(AuthMiddleware)
+app.include_router(auth_router)
+app.include_router(admin_router)
 app.include_router(data_review_router)
 app.include_router(profile_router)
 app.include_router(jobs_router)
@@ -47,7 +58,6 @@ app.include_router(profile_drafts_router)
 app.include_router(resumes_router)
 app.include_router(tasks_router)
 app.include_router(assets_router)
-app.include_router(events_router)
 app.include_router(applications_router)
 app.include_router(interviews_router)
 app.include_router(assistant_router)

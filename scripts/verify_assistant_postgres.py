@@ -43,6 +43,7 @@ def main():
     database.migrate()
     if '--cleanup' in sys.argv:
         data=json.loads(MANIFEST.read_text());cleanup(database,data);data['cleaned_up']=True;MANIFEST.write_text(json.dumps(data,indent=2));return
+    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     live=os.getenv('KLTN_LIVE_ASSISTANT')=='1';keep=os.getenv('KLTN_KEEP_ASSISTANT_FIXTURE')=='1'
     owned={'records':[],'tasks':[],'profiles':[],'threads':[],'synthetic_fixture':True}
     started=time.monotonic()

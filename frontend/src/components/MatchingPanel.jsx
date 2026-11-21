@@ -1,11 +1,6 @@
 import CVVersionNotice from "./CVVersionNotice.jsx";
 import React, { useState } from "react";
-
-const dimensions = {
-  required_skills: "Kỹ năng chuyên môn",
-  experience: "Kinh nghiệm",
-  education: "Học vấn",
-};
+import { jobScore } from "../features/jobs/jobScore.js";
 
 function RequirementTags({ title, items, kind = "" }) {
   const [expanded, setExpanded] = useState(false);
@@ -42,13 +37,13 @@ export default function MatchingPanel({
   error,
   onRetry,
   onUpdateProfile,
-  onOptimizeCV,
 }) {
   const isCV = evaluation?.input_type === "cv" || !!inputCVId;
   const match = evaluation?.matching;
   const units =
     match?.assessments.filter((item) => item.counted_in_score) || [];
   const hasScore = match?.score != null;
+  const technical = jobScore(evaluation);
   return (
     <div className="matching-panel" aria-live="polite">
       <div className="panel-heading">
@@ -88,34 +83,25 @@ export default function MatchingPanel({
         <>
           <div className="score-box">
             <strong className="match-score" data-testid="match-score">
-              {match.score.toLocaleString("vi-VN", {
+              {(technical?.score ?? match.score).toLocaleString("vi-VN", {
                 maximumFractionDigits: 0,
               })}
               <small>%</small>
             </strong>
-            <span>Mức đáp ứng yêu cầu</span>
+            <span>Mức đáp ứng yêu cầu chuyên môn</span>
           </div>
-          <div className="dimension-scores">
-            {Object.entries(dimensions)
-              .filter(([key]) => match.dimension_scores[key] != null)
-              .map(([key, label]) => {
-                const value = match.dimension_scores[key];
-                return (
-                  <div key={key}>
-                    <div>
-                      <span>{label}</span>
-                      <strong>
-                        {value.toLocaleString("vi-VN", {
-                          maximumFractionDigits: 0,
-                        })}
-                        %
-                      </strong>
-                    </div>
-                    <meter min="0" max="100" value={value} aria-label={label} />
-                  </div>
-                );
-              })}
+          <p className="match-summary">{technical?.summary}</p>
+          <div className="score-weights">
+            <span>Chuyên môn bắt buộc 70%</span>
+            <span>Kỹ thuật ưu tiên 25%</span>
+            <span>Kinh nghiệm & môi trường 5%</span>
           </div>
+          {technical?.categories?.length > 0 && <div className="technical-groups">
+            {technical.categories.map(([label, items]) => <div key={label}>
+              <strong>{label}</strong>
+              <span>{[...new Set(items.map((item) => item.label))].slice(0, 4).join(" · ")}</span>
+            </div>)}
+          </div>}
           <RequirementTags
             title="Điểm phù hợp"
             items={units.filter((item) => item.status === "met")}
@@ -173,11 +159,8 @@ export default function MatchingPanel({
       )}
       {!isCV && (
         <div className="future-actions">
-          <button disabled={busy || !match} onClick={onUpdateProfile}>
+          <button disabled={busy} onClick={onUpdateProfile}>
             Cập nhật hồ sơ
-          </button>
-          <button disabled={busy || !match} onClick={onOptimizeCV}>
-            Tối ưu CV
           </button>
         </div>
       )}

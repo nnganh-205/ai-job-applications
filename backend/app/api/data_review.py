@@ -109,7 +109,7 @@ def prelabel(key:str,body:Version,pack:str='topcv'):
         from backend.app.core.config import settings
         from ai.agents.jd_extraction import JD_PROMPT_VERSION
         from ai.prompts.cv_prompt import CV_PROMPT_VERSION
-        model_metadata={'status':'model_draft','model':settings.jd_model,'cv_model':None if matching or packet.get('cleaning') else settings.cv_model,'jd_prompt_version':JD_PROMPT_VERSION,'cv_prompt_version':None if matching or packet.get('cleaning') else CV_PROMPT_VERSION,'requirements':labels,'requirements_payload':requirements.model_dump(mode='json'),'warnings':warnings,'overall_label_generated':False}
+        model_metadata={'status':'model_draft','model':settings.model_for_task('jd'),'cv_model':None if matching or packet.get('cleaning') else settings.model_for_task('cv'),'jd_prompt_version':JD_PROMPT_VERSION,'cv_prompt_version':None if matching or packet.get('cleaning') else CV_PROMPT_VERSION,'requirements':labels,'requirements_payload':requirements.model_dump(mode='json'),'warnings':warnings,'overall_label_generated':False}
         saved=store.save(key,body.version,annotation,'draft',origin='ai',model_metadata=model_metadata)
         return {'progress':saved,'validation':store.validation(key)}
     try:return run(generate,pack)

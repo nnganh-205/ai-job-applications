@@ -100,7 +100,7 @@ def extract_compact(raw,requester,warnings=None):
     for index,chunk in enumerate(chunks):
         report('jd_extract','Đang xác định kỹ năng được nêu trong JD',index,len(chunks))
         messages=[{'role':'system','content':PROMPT},{'role':'user','content':json.dumps({'source_lines':chunk},ensure_ascii=False)}]
-        key=hashlib.sha256(json.dumps([JD_PROMPT_VERSION,settings.jd_model,chunk],ensure_ascii=False,sort_keys=True).encode()).hexdigest()
+        key=hashlib.sha256(json.dumps([JD_PROMPT_VERSION,settings.identity_for_task('jd'),chunk],ensure_ascii=False,sort_keys=True).encode()).hexdigest()
         saved=database.get_record('jd_extraction_parts',key) if database.enabled() else None
         part=CompactJD.model_validate(saved['output']) if saved else None
         for attempt in range(2):
@@ -111,7 +111,7 @@ def extract_compact(raw,requester,warnings=None):
             except OllamaSchemaError:
                 if attempt:raise
                 part=None;messages.append({'role':'user','content':'Invalid citation. Use only supplied line numbers and exact short skill substrings. Do not translate names.'})
-        if database.enabled() and not saved:database.put_record('jd_extraction_parts',key,{'prompt_version':JD_PROMPT_VERSION,'model':settings.jd_model,'output':part.model_dump(mode='json')},immutable=True)
+        if database.enabled() and not saved:database.put_record('jd_extraction_parts',key,{'prompt_version':JD_PROMPT_VERSION,'model':settings.model_for_task('jd'),'provider':settings.provider_for_task('jd'),'output':part.model_dump(mode='json')},immutable=True)
         for field in combined.__class__.model_fields:
             value=getattr(expanded,field)
             if isinstance(value,list):getattr(combined,field).extend(value)

@@ -4,6 +4,7 @@ import threading
 from uuid import uuid4
 from backend.app.db import database
 from backend.app.db.profile_revision_repository import RevisionConflict
+from backend.app.core.workspace import owner_id, workspace
 
 log=logging.getLogger(__name__)
 
@@ -24,15 +25,15 @@ def submit(kind,payload,idempotency_key, *, connection=None):
         with database.connect() as c,c.transaction():
             return submit(kind,payload,idempotency_key,connection=c)
     c=connection
-    c.execute('INSERT INTO kltn_app.tasks(task_id,kind,payload,idempotency_key) VALUES (%s,%s,%s,%s) ON CONFLICT(idempotency_key) DO NOTHING',('task_'+uuid4().hex,kind,Jsonb(payload),idempotency_key))
-    row=c.execute('SELECT * FROM kltn_app.tasks WHERE idempotency_key=%s',(idempotency_key,)).fetchone()
+    c.execute('INSERT INTO kltn_app.tasks(task_id,kind,payload,idempotency_key,owner_id) VALUES (%s,%s,%s,%s,%s) ON CONFLICT(owner_id,idempotency_key) DO NOTHING',('task_'+uuid4().hex,kind,Jsonb(payload),idempotency_key,owner_id()))
+    row=c.execute('SELECT * FROM kltn_app.tasks WHERE idempotency_key=%s AND owner_id=%s',(idempotency_key,owner_id())).fetchone()
     if row['kind']!=kind or row['payload']!=payload:raise RevisionConflict('Mã gửi đã dùng cho dữ liệu khác. Tạo yêu cầu mới.')
     return public(row)
 
 
 def read(task_id):
     require_database()
-    with database.connect() as c:row=c.execute('SELECT * FROM kltn_app.tasks WHERE task_id=%s',(task_id,)).fetchone()
+    with database.connect() as c:row=c.execute('SELECT * FROM kltn_app.tasks WHERE task_id=%s AND owner_id=%s',(task_id,owner_id())).fetchone()
     if row is None:raise LookupError('Không tìm thấy tác vụ')
     return public(row)
 
@@ -40,7 +41,7 @@ def read(task_id):
 def retry(task_id):
     require_database()
     with database.connect() as c,c.transaction():
-        row=c.execute('SELECT * FROM kltn_app.tasks WHERE task_id=%s FOR UPDATE',(task_id,)).fetchone()
+        row=c.execute('SELECT * FROM kltn_app.tasks WHERE task_id=%s AND owner_id=%s FOR UPDATE',(task_id,owner_id())).fetchone()
         if row is None:raise LookupError('Không tìm thấy tác vụ')
         if row['status']!='failed':raise RevisionConflict('Chỉ thử lại tác vụ đã thất bại')
         row=c.execute("UPDATE kltn_app.tasks SET status='queued',result=NULL,error=NULL,progress=NULL,worker_token=NULL,updated_at=now() WHERE task_id=%s RETURNING *",(task_id,)).fetchone()
@@ -49,7 +50,7 @@ def retry(task_id):
 
 def claim(connection):
     with connection.transaction():
-        row=connection.execute("SELECT * FROM kltn_app.tasks WHERE status='queued' ORDER BY created_at,task_id FOR UPDATE SKIP LOCKED LIMIT 1").fetchone()
+        row=connection.execute("SELECT t.* FROM kltn_app.tasks t WHERE status='queued' AND NOT EXISTS (SELECT 1 FROM kltn_app.auth_users u WHERE u.user_id=t.owner_id AND u.is_active=0) ORDER BY t.created_at,t.task_id FOR UPDATE OF t SKIP LOCKED LIMIT 1").fetchone()
         if row is None:return None
         return connection.execute("UPDATE kltn_app.tasks SET status='running',attempt=attempt+1,worker_token=%s,updated_at=now() WHERE task_id=%s RETURNING *",(uuid4().hex,row['task_id'])).fetchone()
 
@@ -76,7 +77,8 @@ def perform(connection,task):
     def update_progress(value):
         connection.execute("UPDATE kltn_app.tasks SET progress=%s,updated_at=now() WHERE task_id=%s AND status='running' AND worker_token=%s",(Jsonb(value),task['task_id'],task['worker_token']))
     try:
-        with progress_listener(update_progress):
+        account = task.get('owner_id')
+        with workspace(account if account and account.startswith('user_') else None), progress_listener(update_progress):
             report('prepare','Đang chuẩn bị nội dung đã chọn')
             result=dispatch(task)
             report('complete','Đã xử lý xong và lưu kết quả')
@@ -120,5 +122,5 @@ class LocalWorker:
 def list_recent(kind=None,profile_id=None):
     require_database()
     with database.connect() as c:
-        rows=c.execute("SELECT * FROM kltn_app.tasks WHERE (%s::text IS NULL OR kind=%s) AND (%s::text IS NULL OR payload->>'profile_id'=%s) ORDER BY created_at DESC,task_id DESC LIMIT 30",(kind,kind,profile_id,profile_id)).fetchall()
+        rows=c.execute("SELECT * FROM kltn_app.tasks WHERE owner_id=%s AND (%s::text IS NULL OR kind=%s) AND (%s::text IS NULL OR payload->>'profile_id'=%s) ORDER BY created_at DESC,task_id DESC LIMIT 30",(owner_id(),kind,kind,profile_id,profile_id)).fetchall()
     return [public(row) for row in rows]

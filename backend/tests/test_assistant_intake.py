@@ -59,7 +59,7 @@ class IntakeTests(unittest.TestCase):
         self.assertEqual(result['intake']['missing'],[])
         self.assertEqual(result['_profile_draft']['status'],'editing')
         self.assertIsNone(result['_profile_draft']['confirmed_profile_id'])
-        self.assertIn('/workspace/resumes/new/draft_',result['href'])
+        self.assertIn('/workspace/resumes/new?draft=draft_',result['href'])
         next_result=collect({'cv_intake':result['_intake']},IntentDecision(intent='build_cv',updates=[patch('contact','full_name','Bình','Bình')]),'Bình','task_'+'e'*32)
         self.assertNotEqual(result['href'],next_result['href'])
         self.assertEqual(result['_profile_draft']['profile']['contact']['full_name'],'An')
@@ -654,6 +654,34 @@ class MultiFactProjectTests(unittest.TestCase):
         self.assertEqual(entry['technologies'],['React'])
 
 class SkillsFollowupTests(unittest.TestCase):
+    def test_three_technical_groups_preserve_parentheses_and_explicit_labels(self):
+        from unittest.mock import patch as mock_patch
+        from backend.app.services.assistant import choose_intent
+        from backend.app.services.assistant_skills import group_skills
+        text='Ngôn ngữ lập trình: Python, SQL (PostgreSQL, MySQL), Framework & Thư Viện: PyTorch, Hugging Face, Unsloth, LangGraph, Công cụ phát triển: Git, Docker, Google Earth Engine, QGIS'
+        s=self.session()
+        with mock_patch('backend.app.services.assistant.request_structured',side_effect=AssertionError('Unexpected inference')):
+            decision=choose_intent(text,{'language':'vi'},intake=s['cv_intake'])
+        r=collect(s,decision,text,'task_'+'d'*32)
+        groups={e['group']:e['items'] for e in r['intake']['profile']['skills']}
+        self.assertEqual(groups,{
+            'Ngôn ngữ lập trình':['Python','SQL (PostgreSQL, MySQL)'],
+            'Framework & thư viện':['PyTorch','Hugging Face','Unsloth','LangGraph'],
+            'Công cụ phát triển':['Git','Docker','Google Earth Engine','QGIS'],
+        })
+        entries=[dict(group=label,items=items) for label,items in groups.items()]
+        self.assertEqual(group_skills(group_skills(entries)),entries)
+        self.assertIn('ngoại ngữ',r['text'])
+
+    def test_legacy_mixed_groups_are_reclassified_without_losing_skills(self):
+        from backend.app.services.assistant_skills import group_skills
+        entries=[{'group':'Kỹ năng khác','items':['SQL (PostgreSQL, MySQL)','Hugging Face','Unsloth','Google Earth Engine','QGIS']},
+                 {'group':'AI & học máy','items':['PyTorch']},
+                 {'group':'Framework & công cụ phát triển','items':['LangGraph','Git','Docker']}]
+        grouped=group_skills(entries)
+        self.assertEqual({e['group'] for e in grouped},{'Ngôn ngữ lập trình','Framework & thư viện','Công cụ phát triển'})
+        self.assertEqual(sorted(item for e in entries for item in e['items']),sorted(item for e in grouped for item in e['items']))
+
     def session(self):
         i=blank_intake();i['profile']['contact'].update(full_name='An',email='an@example.com')
         i.update(target_role='AI Engineer',skipped=['education','experience','project'])
@@ -668,8 +696,9 @@ class SkillsFollowupTests(unittest.TestCase):
         r=self.turn(s,'dùng được python, pytorch, langgraph, tensorflow, numpy, pandas, CNN, TRANSFORMER, RAG, PROMT engineering')
         groups={e['group']:e['items'] for e in r['intake']['profile']['skills']}
         self.assertEqual(groups['Ngôn ngữ lập trình'],['python'])
-        self.assertEqual(groups['Xử lý dữ liệu'],['numpy','pandas'])
-        self.assertIn('langgraph',groups['Framework & công cụ phát triển'])
+        self.assertIn('numpy',groups['Framework & thư viện'])
+        self.assertIn('pandas',groups['Framework & thư viện'])
+        self.assertIn('langgraph',groups['Framework & thư viện'])
         self.assertIn('CNN',groups['AI & học máy'])
         self.assertIn('PROMT engineering',groups['AI & học máy'])
         self.assertEqual(r['intake']['missing'][0],'skills.languages')

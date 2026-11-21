@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../components/ui/Icon.jsx";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
 import { formatSalary } from "../jobs/formatters.js";
 import useLandingMotion from "./useLandingMotion.js";
 import { HeroRail, PaperSkeleton, DocumentStage } from "./LandingVisuals.jsx";
@@ -153,7 +153,7 @@ export default function HomePage() {
           <div className="zen-letter-body">
             <div className="zen-letter-heading">
               <span className="zen-letter-avatar">
-                <Icon name="spark" size={22} />
+                <Icon name="chat" size={22} />
               </span>
               <div>
                 <strong>Một lời nhắn dành cho bạn</strong>
@@ -175,7 +175,7 @@ export default function HomePage() {
               <em>Từng bước một. Theo cách của bạn.</em>
             </p>
             <div className="zen-letter-signature">
-              Đồng hành cùng bạn. <Icon name="spark" size={15} />
+              Đồng hành cùng bạn. <Icon name="chat" size={15} />
             </div>
           </div>
         </article>
@@ -187,7 +187,6 @@ export default function HomePage() {
         aria-labelledby="zen-upload-title"
         data-reveal
       >
-        <p className="zen-eyebrow">BẮT ĐẦU TỪ NHỮNG GÌ BẠN ĐÃ CÓ</p>
         <h2 id="zen-upload-title">
           Một bản CV. <span>Một góc nhìn mới.</span>
         </h2>
@@ -224,7 +223,7 @@ export default function HomePage() {
           </Link>
           <div className="zen-upload-meta">
             <span>PDF, DOCX có văn bản · Tối đa 5 MB</span>
-            <Link to="/workspace/resumes">
+            <Link to="/workspace">
               Chưa có CV? Tạo hồ sơ mới <Icon name="arrow" size={14} />
             </Link>
           </div>
@@ -240,7 +239,7 @@ export default function HomePage() {
           <article className="zen-feature zen-chat-feature" data-reveal>
             <div className="zen-feature-heading">
               <h2>
-                Trợ lý AI <Icon name="spark" size={26} />
+                Trợ lý AI <Icon name="chat" size={26} />
                 <span>Hiểu câu chuyện của bạn.</span>
               </h2>
               <p>
@@ -270,7 +269,7 @@ export default function HomePage() {
               <div className="zen-conversation" key={chat}>
                 <p className="zen-chat-question">{example.question}</p>
                 <div className="zen-chat-answer">
-                  <Icon name="spark" size={21} />
+                  <Icon name="chat" size={21} />
                   <p>{example.answer}</p>
                 </div>
               </div>
@@ -302,7 +301,7 @@ export default function HomePage() {
               </div>
               <div className="zen-suggestion">
                 <span>
-                  <Icon name="spark" size={17} />{" "}
+                  <Icon name="chat" size={17} />{" "}
                   {edited
                     ? "Gọn hơn, vẫn đúng thông tin gốc"
                     : "Một câu rõ hơn đang chờ bạn"}
@@ -327,7 +326,6 @@ export default function HomePage() {
       >
         <div className="zen-section-heading" data-reveal>
           <div>
-            <p className="zen-eyebrow">THIẾT KẾ ĐỂ NỘI DUNG LÊN TIẾNG</p>
             <h2 id="zen-template-title">
               Cùng một câu chuyện.
               <br />
@@ -391,9 +389,8 @@ export default function HomePage() {
               {text}
             </span>
           ))}
-          <Icon name="spark" size={42} />
+          <Icon name="chat" size={42} />
         </div>
-        <p className="zen-eyebrow">MỖI HÀNH TRÌNH ĐỀU XỨNG ĐÁNG</p>
         <h2 id="zen-role-title">
           Dành cho những người
           <br />
@@ -410,7 +407,7 @@ export default function HomePage() {
               <div key={copy} aria-hidden={copy === 1 ? true : undefined}>
                 {roles.map((role) => (
                   <span key={role}>
-                    <Icon name="spark" size={15} />
+                    <Icon name="chat" size={15} />
                     {role}
                   </span>
                 ))}
@@ -427,7 +424,6 @@ export default function HomePage() {
       >
         <div className="zen-section-heading">
           <div>
-            <p className="zen-eyebrow">SẴN SÀNG CHO BƯỚC TIẾP THEO?</p>
             <h2 id="zen-jobs-title">
               Khám phá cơ hội. <span>Tìm hướng đi.</span>
             </h2>
@@ -486,7 +482,6 @@ export default function HomePage() {
         data-reveal
       >
         <div className="zen-faq-heading">
-          <p className="zen-eyebrow">MỘT VÀI ĐIỀU BẠN MUỐN BIẾT</p>
           <h2 id="zen-faq-title">
             Bắt đầu <span>đơn giản hơn.</span>
           </h2>
@@ -557,7 +552,6 @@ export default function HomePage() {
         aria-labelledby="zen-ending-title"
       >
         <div className="zen-ending-copy zen-container" data-reveal>
-          <p className="zen-eyebrow">VIẾT TIẾP CHƯƠNG MỚI CỦA BẠN</p>
           <h2 id="zen-ending-title">
             Chăm chút từng câu chữ.
             <br />

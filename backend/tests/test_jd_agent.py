@@ -294,7 +294,7 @@ Work with modern Software Engineering projects."""
         self.assertEqual(state["status"], "completed")
         self.assertIn("job_requirements", state)
 
-    @patch("ai.llm.ollama_client.httpx.post")
+    @patch("ai.llm.ollama_client._client.post")
     def test_ollama_not_running(self, mock_post):
         mock_post.side_effect = httpx.ConnectError("connection refused")
         with self.assertRaises(OllamaConnectionError):
@@ -322,7 +322,13 @@ Work with modern Software Engineering projects."""
 
 class JobApiTests(unittest.TestCase):
     def setUp(self):
-        self.client = TestClient(app)
+        # Route validation is independent of account middleware, covered by test_auth.
+        from fastapi import FastAPI
+        from backend.app.api.jobs import router
+        api = FastAPI()
+        api.include_router(router)
+        self.client = TestClient(api)
+        self.addCleanup(self.client.close)
 
     def test_unsafe_url_returns_http_400(self):
         response = self.client.post(

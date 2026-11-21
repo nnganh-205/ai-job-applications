@@ -1,3 +1,4 @@
+from backend.app.core.workspace import storage_path
 import re
 import os
 import tempfile
@@ -12,17 +13,18 @@ DEFAULT_MATCH_STORAGE = Path(os.environ.get("MATCH_STORAGE_DIR", PROJECT_ROOT / 
 
 
 def load_match(result_id: str, storage_dir: Path = DEFAULT_MATCH_STORAGE) -> MatchResponse | None:
+    storage_dir = storage_path(storage_dir)
     if not re.fullmatch(r"match_[a-f0-9]{24}", result_id):
         raise ValueError("result_id không hợp lệ")
     if database.enabled():
         data = database.get_record("matches", result_id)
-        if data is not None:
-            return MatchResponse.model_validate(data)
+        return MatchResponse.model_validate(data) if data is not None else None
     path = storage_dir / f"{result_id}.json"
     return MatchResponse.model_validate_json(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
 def save_match(result: MatchResponse, storage_dir: Path = DEFAULT_MATCH_STORAGE) -> MatchResponse:
+    storage_dir = storage_path(storage_dir)
     if database.enabled():
         database.put_record("matches", result.result_id, result.model_dump(mode="json"), immutable=True)
         return load_match(result.result_id, storage_dir)

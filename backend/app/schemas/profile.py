@@ -9,6 +9,11 @@ class StrictModel(BaseModel):
 
 class Contact(StrictModel):
     full_name: str | None = None
+    headline: str | None = None
+    date_of_birth: str | None = None
+    gender: str | None = None
+    interests: str | None = None
+    additional_info: str | None = None
     email: str | None = Field(default=None, validation_alias=AliasChoices("email", "email_address"))
     phone: str | None = Field(default=None, validation_alias=AliasChoices("phone", "phone_number"))
     location: str | None = None
@@ -24,6 +29,7 @@ class Contact(StrictModel):
 class Experience(StrictModel):
     id: str | None = None
     job_title: str | None = None
+    # Keep fields present in confirmed profiles from earlier schema versions.
     role: str | None = None
     company: str | None = None
     employment_type: str | None = None
@@ -42,8 +48,8 @@ class Project(StrictModel):
     id: str | None = None
     project_name: str | None = None
     role: str | None = None
-    project_type: str | None = None
     technologies: list[str] = Field(default_factory=list)
+    project_type: str | None = None
     start_date: str | None = None
     end_date: str | None = None
     description: list[str] = Field(default_factory=list)
@@ -95,6 +101,33 @@ class SkillGroup(StrictModel):
     normalized_items: list[str] = Field(default_factory=list)
 
 
+class Certification(StrictModel):
+    id: str | None = None
+    name: str | None = None
+    issuer: str | None = None
+    date: str | None = None
+    description: list[str] = Field(default_factory=list)
+
+
+class Award(StrictModel):
+    id: str | None = None
+    title: str | None = None
+    organization: str | None = None
+    date: str | None = None
+    description: list[str] = Field(default_factory=list)
+
+
+class Reference(StrictModel):
+    id: str | None = None
+    full_name: str | None = None
+    position: str | None = None
+    organization: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    relationship: str | None = None
+    description: list[str] = Field(default_factory=list)
+
+
 class MasterProfile(StrictModel):
     contact: Contact
     experience: list[Experience]
@@ -103,6 +136,9 @@ class MasterProfile(StrictModel):
     involvement: list[Involvement]
     skills: list[SkillGroup]
     summary: str | None = None
+    certifications: list[Certification] = Field(default_factory=list)
+    awards: list[Award] = Field(default_factory=list)
+    references: list[Reference] = Field(default_factory=list)
 
 
 class SourceEvidence(StrictModel):

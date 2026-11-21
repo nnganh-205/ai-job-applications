@@ -11,6 +11,7 @@ export default function ResumeDesignToolbar({
   onExport,
   onSourceEdit,
   onHistory,
+  onPhotoUpload,
 }) {
   const [open, setOpen] = useState(false);
   const modal = useRef(null);
@@ -72,6 +73,17 @@ export default function ResumeDesignToolbar({
                 aria-label="Tùy chọn thiết kế CV"
               >
                 <strong>Trình bày CV</strong>
+                {selected?.has_photo !== false && <>
+                <label>
+                  Ảnh đại diện
+                  <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy}
+                    onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) onPhotoUpload?.(file); }} />
+                </label>
+                {edit.presentation.photo_asset_id && <div>
+                  <img className="editor-photo" alt="Ảnh đại diện đang chọn" src={`/api/assets/${edit.presentation.photo_asset_id}`} />
+                  <button type="button" className="text-button" disabled={busy} onClick={() => presentation("photo_asset_id", null)}>Bỏ ảnh</button>
+                </div>}
+                </>}
                 <button
                   className="cv-toolbar-template"
                   disabled={busy}
@@ -179,7 +191,6 @@ export default function ResumeDesignToolbar({
       >
         <header>
           <div>
-            <p className="eyebrow">THIẾT KẾ CỦA BẠN</p>
             <h2 id="cv-template-title">Chọn mẫu CV</h2>
             <p>Cùng thông tin của bạn, một cách trình bày mới.</p>
           </div>

@@ -24,8 +24,7 @@ def locked(draft_id):
 
 def read(draft_id, connection=None):
     if connection is not None:
-        row = connection.execute("SELECT payload FROM kltn_app.records WHERE kind='profile_drafts' AND record_id=%s", (draft_id,)).fetchone()
-        draft = row['payload'] if row else None
+        draft = database.get_record('profile_drafts', draft_id, connection=connection)
     else:
         draft = records.get('profile_drafts', draft_id)
     if draft is None:
@@ -41,14 +40,41 @@ def write(draft, connection=None):
     return draft
 
 
-def start(base_id=None):
+def start(base_id=None, presentation=None):
     if base_id:
         base_id = revisions.current_revision(base_id)
         profile = profiles.load_profile_record(base_id, profiles.DEFAULT_STORAGE_DIR).profile
     else:
-        profile = MasterProfile(contact={}, experience=[], project=[], education=[], involvement=[], skills=[])
+        from backend.app.core.workspace import owner_id
+        seed = profiles.load_profile_record('account_' + owner_id(), profiles.DEFAULT_STORAGE_DIR)
+        contact = {field: getattr(seed.profile.contact, field) for field in ('full_name', 'email')} if seed else {}
+        profile = MasterProfile(contact=contact, experience=[], project=[], education=[], involvement=[], skills=[])
     draft = dict(draft_id='draft_' + uuid4().hex, base_profile_id=base_id, version=1, status='editing', profile=profile.model_dump(mode='json'), updated_at=utc_now(), confirmed_profile_id=None, confirmation_event_id=None)
+    if presentation is not None:draft['presentation']=presentation.model_dump(mode='json')
     with locked(draft['draft_id']) as connection:
+        return write(draft, connection)
+
+
+def from_extraction(thread_id, state):
+    """Open an editable form without confirming the imported CV's facts."""
+    from uuid import NAMESPACE_URL, uuid5
+    if not state or state.get('status') != 'pending_confirmation':
+        raise LookupError('Không tìm thấy kết quả trích xuất đang chờ kiểm tra')
+    profile = MasterProfile.model_validate(state['profile'])
+    draft_id = 'draft_' + uuid5(NAMESPACE_URL, 'kltn:cv-import:' + thread_id).hex
+    with locked(draft_id) as connection:
+        try:
+            return read(draft_id, connection)
+        except LookupError:
+            pass
+        draft = dict(
+            draft_id=draft_id, base_profile_id=None, version=1, status='editing',
+            profile=profile.model_dump(mode='json'), updated_at=utc_now(),
+            confirmed_profile_id=None, confirmation_event_id=None,
+            import_thread_id=thread_id, source_text=state.get('resume_text'),
+            source_filename=state.get('filename'),
+            warnings=state.get('warnings', []), evidence=state.get('evidence', []),
+        )
         return write(draft, connection)
 
 
@@ -58,6 +84,7 @@ def save(draft_id, request):
         if draft['status'] != 'editing' or draft['version'] != request.expected_version:
             raise revisions.RevisionConflict('Bản nháp đã thay đổi hoặc đã xác nhận. Tải lại trước khi sửa.')
         draft.update(profile=request.profile.model_dump(mode='json'), version=draft['version'] + 1, updated_at=utc_now())
+        if request.presentation is not None:draft['presentation']=request.presentation.model_dump(mode='json')
         return write(draft, connection)
 
 
@@ -80,7 +107,15 @@ def confirm(draft_id, request):
             confirmed_id = revisions.commit_revision(base_id, profile, session_id=draft_id, action_id=request.event_id, changed_paths=changed, quote=quote, connection=connection)
         else:
             confirmed_id = 'profile_' + draft_id.removeprefix('draft_')
-            profiles.save_master_profile(confirmed_id, profile, profiles.DEFAULT_STORAGE_DIR, evidence=[SourceEvidence(field_path=key, source_id=draft_id, origin='user_confirmation', quote=quote) for key in changed], connection=connection)
+            metadata = {}
+            evidence = [SourceEvidence(field_path=key, source_id=draft_id, origin='user_confirmation', quote=quote) for key in changed]
+            if draft.get('import_thread_id'):
+                from ai.agents.profile_agent import confirmation_evidence, validate_against_source
+                source_text = draft.get('source_text') or ''
+                evidence = confirmation_evidence(profile, source_text, draft['import_thread_id'])
+                metadata = dict(source_text=source_text, source_filename=draft.get('source_filename'),
+                                warnings=validate_against_source(profile, source_text))
+            profiles.save_master_profile(confirmed_id, profile, profiles.DEFAULT_STORAGE_DIR, evidence=evidence, connection=connection, **metadata)
         draft.update(profile=after, status='confirmed', confirmed_profile_id=confirmed_id, confirmation_event_id=request.event_id, version=draft['version'] + 1, updated_at=utc_now())
         return write(draft, connection)
 
@@ -89,6 +124,5 @@ def list_editing():
     if database.enabled():
         items = [row["data"] for row in database.list_records("profile_drafts")]
     else:
-        import json
-        items = [json.loads(path.read_text()) for path in (records.DEFAULT_WORKFLOW_STORAGE / "profile_drafts").glob("*.json")]
+        items = records.list_kind('profile_drafts')
     return [{"draft_id": item["draft_id"], "full_name": item["profile"]["contact"].get("full_name"), "updated_at": item["updated_at"]} for item in items if item["status"] == "editing"]

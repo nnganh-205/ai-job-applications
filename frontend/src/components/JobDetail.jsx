@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import ApplicationPanel from "../features/applications/ApplicationPanel.jsx";
 import {formatSalary} from "../features/jobs/formatters.js";
-import JDDetails from "./JDDetails.jsx";
-import { sourceTime } from "./JobCard.jsx";
 
 export function splitJobSections(text) {
   const headings = /^(mô tả công việc|yêu cầu (ứng viên|công việc)|quyền lợi|phúc lợi|responsibilities|requirements|qualifications|benefits|about (the )?role|what you.ll do|what you.ll bring)\s*:?\s*$/i;
@@ -19,11 +17,8 @@ export default function JobDetail({
   job,
   evaluation,
   busy,
-  refreshing,
-  onRefresh,
   error,
 }) {
-  const [tab, setTab] = useState("description");
   const [review, setReview] = useState(false);
   if (!job && busy) return <div className="empty-panel" role="status"><h2>Đang tải công việc…</h2><p>Nội dung tin sẽ xuất hiện trước khi có kết quả đánh giá.</p></div>;
   if (!job && error) return <div className="error" role="alert"><h2>Chưa tải được công việc</h2><p>{error}</p><p>Thử lại đánh giá hoặc trở về kết quả tìm kiếm để chọn tin khác.</p></div>;
@@ -42,10 +37,6 @@ export default function JobDetail({
     );
   return (
     <article className="job-detail">
-      <p className="eyebrow">
-        {job.source_name}
-        {job.source_board && ` · ${job.source_board}`}
-      </p>
       <h1>{job.title}</h1>
       <h2 className="company-name">
         {job.company ||
@@ -73,15 +64,6 @@ export default function JobDetail({
             {review ? "Đóng bước chuẩn bị" : "Chuẩn bị ứng tuyển →"}
           </button>
         )}
-        <button
-          className="secondary-button"
-          disabled={
-            refreshing || !job.source_url || job.import_method === "text"
-          }
-          onClick={onRefresh}
-        >
-          {refreshing ? "Đang cập nhật…" : "Cập nhật JD từ nguồn"}
-        </button>
       </div>
       {review && (
         <ApplicationPanel
@@ -90,71 +72,20 @@ export default function JobDetail({
           evaluation={evaluation}
         />
       )}
-      {job.expiry_conflict&&<p className="notice">Thông tin hạn tuyển chưa thống nhất trên trang nguồn. Hạn đang hiển thị: {job.source_expires_at_text}. Hãy kiểm tra lại tin gốc trước khi ứng tuyển.</p>}
-      <p className="source-line">
-        {job.fetched_at
-          ? `Lần lấy thành công: ${sourceTime(job.fetched_at)}.`
-          : "Tin đã lưu chưa có thời điểm cập nhật từ nguồn."}{" "}
-        Hãy kiểm tra nguồn để xác nhận công việc còn nhận hồ sơ.
-      </p>
-      {job.source_url && (
-        <p className="source-line">
-          Nguồn:{" "}
-          <a href={job.source_url} target="_blank" rel="noopener noreferrer">
-            {job.source_name} ↗
-          </a>
-          {job.source_updated_at &&
-            ` · Cập nhật theo nguồn: ${sourceTime(job.source_updated_at)}`}
-          {job.expires_at && ` · Hạn theo nguồn: ${sourceTime(job.expires_at)}`}
-        </p>
-      )}
       {job.timezone_restrictions?.length > 0 && (
         <details>
-          <summary>Giới hạn múi giờ theo nguồn</summary>
+          <summary>Yêu cầu múi giờ</summary>
           <p>{job.timezone_restrictions.join(", ")}</p>
           <p className="muted">
             Remote không tự động đồng nghĩa có thể ứng tuyển từ mọi quốc gia.
           </p>
         </details>
       )}
-      {job.work_locations?.length>0&&<details><summary>Địa điểm làm việc theo nguồn</summary><ul>{job.work_locations.map((place,index)=><li key={index}>{place}</li>)}</ul></details>}
-      <div
-        className="detail-tabs"
-        role="tablist"
-        aria-label="Thông tin công việc"
-      >
-        <button
-          role="tab"
-          aria-selected={tab === "description"}
-          onClick={() => setTab("description")}
-        >
-          JD đầy đủ
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "requirements"}
-          onClick={() => setTab("requirements")}
-        >
-          Yêu cầu đã phân tích{busy ? "…" : ""}
-        </button>
+      {job.work_locations?.length > 0 && <section className="job-locations"><h2>Địa điểm làm việc</h2><ul>{job.work_locations.map((place,index)=><li key={index}>{place}</li>)}</ul></section>}
+      <div className="detail-tabs"><h2>Chi tiết công việc</h2></div>
+      <div className="job-description">
+        {splitJobSections(job.description).map((section,index)=><section className="job-section" key={index}><h2>{section.heading}</h2><p>{section.lines.join("\n")}</p></section>)}
       </div>
-      {tab === "description" ? (
-        <div className="job-description" role="tabpanel">
-          {splitJobSections(job.description).map((section,index)=><section className="job-section" key={index}><h2>{section.heading}</h2><p>{section.lines.join("\n")}</p></section>)}
-        </div>
-      ) : (
-        <div role="tabpanel">
-          {busy ? (
-            <p className="loading">Đang phân tích yêu cầu công việc…</p>
-          ) : evaluation ? (
-            <JDDetails job={evaluation.analysis} />
-          ) : (
-            <p className="notice">
-              Chưa có phân tích hợp lệ. Xem thông báo ở khu vực Matching.
-            </p>
-          )}
-        </div>
-      )}
     </article>
   );
 }

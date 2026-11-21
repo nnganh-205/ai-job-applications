@@ -152,7 +152,7 @@ export default function LaptopStage() {
                   <div className="zen-laptop-editor-tabs">
                     <b>Chỉnh sửa</b>
                     <span>Thiết kế</span>
-                    <Icon name="spark" size={11} />
+                    <Icon name="chat" size={11} />
                   </div>
                   {[
                     "Thông tin cá nhân",

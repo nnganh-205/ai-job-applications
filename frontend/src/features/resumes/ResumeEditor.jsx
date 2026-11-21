@@ -6,7 +6,7 @@ import ProfileEditor from "../profile/ProfileEditor.jsx";
 import AIWriter from "../profile/AIWriter.jsx";
 import ResumeDesignToolbar from "./ResumeDesignToolbar.jsx";
 import CVPreviewFrame from "../../components/ui/CVPreviewFrame.jsx";
-import { request } from "../../services/api.js";
+import { request, authenticatedFetch } from "../../lib/api.js";
 import { send } from "./ResumeLibrary.jsx";
 export default function ResumeEditor() {
   const { id } = useParams(),
@@ -109,7 +109,7 @@ export default function ResumeEditor() {
     setPreviewBusy(true);
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/resumes/${id}/preview`, {
+        const response = await authenticatedFetch(`/api/resumes/${id}/preview`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...edit, expected_version: draft.version }),
@@ -147,7 +147,7 @@ export default function ResumeEditor() {
     setMessage("");
     try {
       if (action === "preview") {
-        const response = await fetch(`/api/resumes/${id}/preview`, {
+        const response = await authenticatedFetch(`/api/resumes/${id}/preview`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...edit, expected_version: draft.version }),
@@ -247,6 +247,7 @@ export default function ResumeEditor() {
           resumeId={id}
           draftId={sourceDraft}
           template={edit.presentation.template}
+          initialPresentation={edit.presentation}
           embedded
           onDirtyChange={setSourceDirty}
           onClose={() => {
@@ -275,9 +276,8 @@ export default function ResumeEditor() {
     );
   return (
     <main className={"resume-editor cv-design-editor design-" + view}>
-      <p className="eyebrow">Chỉnh sửa CV</p>
       <h1>Thiết kế bản CV của bạn</h1>
-      <Link to="/workspace/resumes">← Thư viện CV</Link>
+      <Link to="/workspace">← Tổng quan</Link>
       {error && (
         <p role="alert" className="error">
           {error}
@@ -335,6 +335,7 @@ export default function ResumeEditor() {
             onSave={() => act("save")}
             onExport={() => act("export")}
             onSourceEdit={editSource}
+            onPhotoUpload={uploadPhoto}
           />
           <div className={"resume-editor-grid mode-" + view}>
             <div className="editor-form">
@@ -608,17 +609,22 @@ export default function ResumeEditor() {
                           "education",
                         ].includes(s.kind) && (
                           <>
-                            {dirty && (
-                              <small>
-                                Lưu bản nháp để AI Writer sử dụng nội dung mới
-                                nhất.
-                              </small>
-                            )}
                             <AIWriter
                               section={s.kind}
                               entry={e}
                               value={e.bullets.map((b) => b.text)}
                               disabled={busy || dirty}
+                              renderSource={(suggestions) => e.bullets.map((bullet, bi) => (
+                                <div className="writer-source-line" key={bullet.source_refs.join("|")}>
+                                  <label>Nội dung {bi + 1}
+                                    <textarea value={bullet.text} rows={3} disabled={busy} onChange={(event) =>
+                                      change((d) => { d.document.sections[si].entries[ei].bullets[bi].text = event.target.value; })} />
+                                  </label>
+                                  {suggestions(bi)}
+                                  <button type="button" className="secondary-button" disabled={busy} onClick={() =>
+                                    change((d) => { d.document.sections[si].entries[ei].bullets.splice(bi, 1); })}>Ẩn nội dung</button>
+                                </div>
+                              ))}
                               onGenerate={(payload) =>
                                 send(`/api/resumes/${id}/writer`, {
                                   expected_version: draft.version,
@@ -626,6 +632,7 @@ export default function ResumeEditor() {
                                   entry_id: e.source_entry_id,
                                   style: payload.style,
                                   count: payload.count,
+                                  issues: payload.issues,
                                 })
                               }
                               onApply={async (
@@ -649,7 +656,7 @@ export default function ResumeEditor() {
                             />
                           </>
                         )}
-                        {e.bullets.map((b, bi) => (
+                        {!["experience", "project", "involvement", "education"].includes(s.kind) && e.bullets.map((b, bi) => (
                           <label key={b.source_refs.join("|")}>
                             Nội dung {bi + 1}
                             <textarea
@@ -744,6 +751,8 @@ export default function ResumeEditor() {
                   "Mẫu, màu sắc và kiểu chữ cập nhật theo lựa chọn của bạn."}
               </p>
               <CVPreviewFrame
+                pageWidth={templates.find((item) => item.id === edit.presentation.template)?.page_width}
+                pageHeight={templates.find((item) => item.id === edit.presentation.template)?.page_height}
                 title="Xem trước CV"
                 srcDoc={preview || undefined}
                 src={

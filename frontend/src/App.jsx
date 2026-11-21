@@ -15,33 +15,56 @@ import Icon from "./components/ui/Icon.jsx";
 import WorkspaceNav from "./app/layouts/WorkspaceNav.jsx";
 import SiteHeader from "./app/layouts/SiteHeader.jsx";
 import AssistantPage from "./features/assistant/AssistantPage.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
+import Dashboard from "./features/jobs/Dashboard.jsx";
 import WorkspacePage, {
   CVGenerationPage,
 } from "./features/workspace/WorkspacePage.jsx";
 import InterviewPage from "./features/interviews/InterviewPage.jsx";
 import ApplicationsPage from "./features/applications/ApplicationsPage.jsx";
 import HomePage from "./features/home/HomePage.jsx";
-import EventsPage from "./features/events/EventsPage.jsx";
+import AdminPage from "./features/admin/AdminPage.jsx";
 import TemplateGallery from "./features/templates/TemplateGallery.jsx";
-import ResumeLibrary from "./features/resumes/ResumeLibrary.jsx";
 import ResumeEditor from "./features/resumes/ResumeEditor.jsx";
 import ProfileEditor from "./features/profile/ProfileEditor.jsx";
 import ProfileConversation from "./features/profile/ProfileConversation.jsx";
 import ImportProfile from "./features/profile/ImportProfile.jsx";
+import AuthPage from "./features/auth/AuthPage.jsx";
+import { AuthProvider, useAuth } from "./features/auth/AuthContext.jsx";
+import { accountStorage } from "./lib/accountStorage.js";
+
+function AccountGate({ children }) {
+  const { user, ready, error, requiresLogin, refresh } = useAuth();
+  const location = useLocation();
+  const adminPage = /^\/admin(\/|$)/.test(location.pathname);
+  const privatePage = location.pathname.startsWith('/workspace') || adminPage;
+  const authPage = ['/login', '/register'].includes(location.pathname);
+  if ((privatePage && !ready) || (privatePage && error)) return <main className="auth-loading" aria-live="polite"><Icon name="shield" size={28} /><p>{error || 'Đang mở không gian của bạn…'}</p>{error && <button type="button" onClick={() => refresh()}>Thử lại</button>}</main>;
+  if ((privatePage && !user) || (requiresLogin && !authPage)) {
+    return <Navigate replace to={`/login?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`} />;
+  }
+  if (adminPage && user?.role !== 'admin') return <main className="auth-loading"><Icon name="shield" size={28} /><h1>Không có quyền truy cập</h1><p>Trang này chỉ dành cho quản trị viên.</p><Link to="/workspace">Về không gian của tôi</Link></main>;
+  return children;
+}
+
+function AccountWorkspace() {
+  const { user } = useAuth();
+  return <WorkspaceApp key={user?.user_id || 'guest'} />;
+}
 
 function WorkspaceApp() {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search, hash } = useLocation();
   const isWorkspace = pathname.startsWith("/workspace");
   const isHome = pathname === "/";
-  const hasAurora = /^\/(jobs|templates|events)(\/|$)/.test(pathname) || isWorkspace;
+  const isAuth = pathname === '/register' || pathname === '/login';
+  const hasAurora = /^\/(jobs|templates)(\/|$)/.test(pathname) || isWorkspace;
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+    if (!isAuth && !/^\/admin(\/|$)/.test(pathname)) document.title = 'CV & Cơ hội nghề nghiệp';
   }, [pathname]);
   const [profileId, setProfileId] = useState(() => {
     try {
-      return localStorage.getItem("kltn.confirmedProfileId") || null;
+      return accountStorage.getItem("kltn.confirmedProfileId") || null;
     } catch {
       return null;
     }
@@ -49,12 +72,13 @@ function WorkspaceApp() {
   function confirmed(id) {
     setProfileId(id);
     try {
-      localStorage.setItem("kltn.confirmedProfileId", id);
+      accountStorage.setItem("kltn.confirmedProfileId", id);
     } catch {}
   }
+  if (/^\/admin(\/|$)/.test(pathname)) return <AccountGate><AdminPage /></AccountGate>;
   return (
-    <div className={isHome ? "landing-shell" : hasAurora ? "aurora-shell" : undefined}>
-      {(isHome || hasAurora) && <div className="aurora-backdrop" aria-hidden="true" />}
+    <div className={isAuth ? 'landing-shell auth-shell' : isHome ? "landing-shell" : hasAurora ? "aurora-shell" : undefined}>
+      {(isHome || isAuth || hasAurora) && <div className="aurora-backdrop" aria-hidden="true" />}
       <a className="skip-link" href="#page-content">
         Đến nội dung chính
       </a>
@@ -66,7 +90,9 @@ function WorkspaceApp() {
           tabIndex={-1}
           className={isWorkspace ? "workspace-content" : "public-content"}
         >
-          <Routes>
+          <AccountGate><Routes>
+            <Route path="/register" element={<AuthPage mode="register" />} />
+            <Route path="/login" element={<AuthPage mode="login" />} />
             <Route path="/workspace/data-review" element={<Navigate replace to="/workspace/assistant" />} />
             <Route path="/workspace/assistant" element={<AssistantPage />} />
             <Route
@@ -84,15 +110,13 @@ function WorkspaceApp() {
             />
             <Route path="/templates" element={<TemplateGallery />} />
             <Route path="/" element={<HomePage />} />
-            <Route path="/events" element={<EventsPage />} />
+            <Route path="/events" element={<Navigate replace to="/" />} />
             <Route
               path="/jobs"
               element={
                 <main className="dashboard-shell">
                   <Dashboard
                     confirmedProfileId={profileId}
-                    onOpenProfile={() => navigate("/workspace/resumes")}
-                    onProfileConfirmed={confirmed}
                   />
                 </main>
               }
@@ -103,8 +127,6 @@ function WorkspaceApp() {
                 <main className="dashboard-shell">
                   <Dashboard
                     confirmedProfileId={profileId}
-                    onOpenProfile={() => navigate("/workspace/resumes")}
-                    onProfileConfirmed={confirmed}
                   />
                 </main>
               }
@@ -116,7 +138,7 @@ function WorkspaceApp() {
             <Route path="/workspace" element={<WorkspacePage />} />
             <Route
               path="/workspace/profile"
-              element={<Navigate replace to="/workspace/resumes" />}
+              element={<Navigate replace to="/workspace" />}
             />
             <Route
               path="/workspace/profile/:id/:section"
@@ -139,7 +161,7 @@ function WorkspaceApp() {
               path="/workspace/resumes/new/:id"
               element={<ProfileEditor onConfirmed={confirmed} />}
             />
-            <Route path="/workspace/resumes" element={<ResumeLibrary />} />
+            <Route path="/workspace/resumes" element={<Navigate replace to={{ pathname: "/workspace", search, hash }} />} />
             <Route
               path="/workspace/resumes/:id/edit"
               element={<ResumeEditor />}
@@ -153,10 +175,10 @@ function WorkspaceApp() {
                 </main>
               }
             />
-          </Routes>
+          </Routes></AccountGate>
         </div>
       </div>
-      {!isWorkspace && <footer className="site-footer">
+      {!isAuth && !isWorkspace && !pathname.startsWith("/jobs") && <footer className="site-footer">
         {isWorkspace ? (
           null
         ) : (
@@ -173,12 +195,10 @@ function WorkspaceApp() {
                 <strong>Khám phá</strong>
                 <Link to="/jobs">Tìm việc làm</Link>
                 <Link to="/templates">Thư viện mẫu CV</Link>
-                <Link to="/events">Sự kiện nghề nghiệp</Link>
               </div>
               <div>
                 <strong>Không gian của bạn</strong>
-                <Link to="/workspace/resumes">Thư viện CV</Link>
-                <Link to="/workspace/resumes">CV của tôi</Link>
+                <Link to="/workspace">CV của tôi</Link>
                 <Link to="/workspace/assistant">Trợ lý AI</Link>
               </div>
             </div>
@@ -191,7 +211,7 @@ function WorkspaceApp() {
     </div>
   );
 }
-const router = createBrowserRouter([{ path: "*", element: <WorkspaceApp /> }]);
+const router = createBrowserRouter([{ path: "*", element: <AccountWorkspace /> }]);
 export default function App() {
-  return <RouterProvider router={router} />;
+  return <AuthProvider><RouterProvider router={router} /></AuthProvider>;
 }

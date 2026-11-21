@@ -8,7 +8,6 @@ from pydantic import Field, create_model, field_validator
 
 from ai.agents.cv_agent import bullet_catalog, validate_edits
 from ai.agents.cv_grounding import catalog_context, check_rewrite, editorial_rewrite
-from ai.llm.ollama_client import OllamaError, llm_deadline, request_structured
 from backend.app.schemas.cv import CVBullet
 from backend.app.schemas.profile import StrictModel
 
@@ -218,24 +217,15 @@ def apply_form_plan(document, payload, plan):
 
 def refine_form(document):
     payload = form_payload(document)
-    # Match the trained 0..4-candidate input. Each batch has its own allowed
-    # references, and only one batch selects a summary for the full document.
-    candidates = payload["candidates"]
-    batches = [candidates[i:i + 4] for i in range(0, len(candidates), 4)] or [[]]
-    result = document
-    total_applied = total_rejected = 0
-    try:
-        with llm_deadline(90 * len(batches)):
-            for index, batch in enumerate(batches):
-                part = {**payload, "candidates": batch,
-                        "summary_options": payload["summary_options"] if index == 0 else {}}
-                plan = request_structured(messages_for_form(part, include_suggestions=True), form_plan_schema(part), task="form")
-                result, applied, rejected = apply_form_plan(result, part, plan)
-                total_applied += applied
-                total_rejected += rejected
-    except OllamaError:
-        return document, {"applied": 0, "rejected": 0, "status": "fallback"}
-    return result, {"applied": total_applied, "rejected": total_rejected, "status": "completed"}
+    # Both edit text and summary selection are already fully determined by source rules.
+    plan = FormPlan(
+        edits=[FormEdit(source_ref=c["source_ref"], proposed_text=c["proposed_text"])
+               for c in payload["candidates"]],
+        summary_refs=preferred_summary_refs(payload["summary_options"]),
+    )
+    result, applied, rejected = apply_form_plan(document, payload, plan)
+    validate_form_document(document, result)
+    return result, {"applied": applied, "rejected": rejected, "status": "completed"}
 
 
 def validate_form_document(original, edited):

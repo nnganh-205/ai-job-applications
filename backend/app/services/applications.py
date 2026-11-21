@@ -8,23 +8,22 @@ from backend.app.db.profile_revision_repository import RevisionConflict
 from backend.app.services.profile_drafts import locked
 from backend.app.schemas.cv import CVDocument
 
-OWNER_ID=os.getenv('WORKSPACE_OWNER_ID','local-demo')
+from backend.app.core.workspace import owner_id
 ADVANCED={'applied','interviewing','offer','rejected','withdrawn'}
 
 
-def identity(posting_id):return 'application_'+hashlib.sha256(f'{OWNER_ID}:{posting_id}'.encode()).hexdigest()[:32]
+def identity(posting_id):return 'application_'+hashlib.sha256(f'{owner_id()}:{posting_id}'.encode()).hexdigest()[:32]
 
 
 def _stored(key,connection=None):
     if connection is None:return records.get('applications',key)
-    row=connection.execute("SELECT payload FROM kltn_app.records WHERE kind='applications' AND record_id=%s",(key,)).fetchone()
-    return row['payload'] if row else None
+    return database.get_record('applications', key, connection=connection)
 
 
 def read(posting_id):
     job=get_posting(posting_id)
     if job is None:raise LookupError('Không tìm thấy công việc')
-    return _stored(identity(posting_id)) or dict(application_id=identity(posting_id),posting_id=posting_id,title=job.title,company=job.company,job_snapshot_hash=job.content_hash,status='untracked',version=0,cv_id=None,profile_revision_id=None,events=[],updated_at=None,owner_id=OWNER_ID)
+    return _stored(identity(posting_id)) or dict(application_id=identity(posting_id),posting_id=posting_id,title=job.title,company=job.company,job_snapshot_hash=job.content_hash,status='untracked',version=0,cv_id=None,profile_revision_id=None,events=[],updated_at=None,owner_id=owner_id())
 
 
 def update(posting_id,request):
@@ -63,4 +62,4 @@ def update(posting_id,request):
 
 
 def list_all():
-    return sorted((r for r in records.list_kind('applications') if r.get('owner_id')==OWNER_ID),key=lambda r:r['updated_at'],reverse=True)
+    return sorted((r for r in records.list_kind('applications') if r.get('owner_id')==owner_id()),key=lambda r:r['updated_at'],reverse=True)

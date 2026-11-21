@@ -1,3 +1,4 @@
+from backend.app.core.workspace import graph_config
 from uuid import uuid4
 from typing import Annotated
 
@@ -63,6 +64,16 @@ def confirm_profile(thread_id: ThreadID, request: ConfirmationRequest) -> SavedP
     )
 
 
+@router.post("/{thread_id}/form-draft")
+def open_import_form(thread_id: ThreadID):
+    from backend.app.services.profile_drafts import from_extraction
+    state = profile_graph.get_state(graph_config(thread_id)).values
+    try:
+        return from_extraction(thread_id, state)
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.get("/{thread_id}", response_model=SavedProfileResponse)
 def get_master_profile(thread_id: ThreadID) -> SavedProfileResponse:
     record = load_profile_record(thread_id)
@@ -79,7 +90,7 @@ def get_master_profile(thread_id: ThreadID) -> SavedProfileResponse:
 
 @router.get("/{thread_id}/draft", response_model=ExtractionResponse)
 def get_profile_draft(thread_id: ThreadID) -> ExtractionResponse:
-    state = profile_graph.get_state({"configurable": {"thread_id": thread_id}}).values
+    state = profile_graph.get_state(graph_config(thread_id)).values
     if not state or state.get("status") != "pending_confirmation":
         raise HTTPException(status_code=404, detail="Không tìm thấy bản nháp đang chờ xác nhận")
     return ExtractionResponse(thread_id=thread_id, status="pending_confirmation", profile=state["profile"], warnings=state.get("warnings", []), evidence=state.get("evidence", []))

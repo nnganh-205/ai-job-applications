@@ -1,540 +1,195 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  changedLineIndices,
-  mergeWriterEdits,
-  coveredTargetIndices,
+  changedLineIndices, applyWriterSuggestions, groupWriterSuggestions, isChangedSuggestion,
 } from "./writerEdits.js";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
+import { writingQuality } from "../resumes/writingQuality.js";
 
-export default function AIWriter({
-  section,
-  field,
-  initialValue,
-  entry,
-  value = [],
-  disabled,
-  onApply,
-  onGenerate,
-  action = null,
-}) {
-  const [open, setOpen] = useState(false),
-    [tasks, setTasks] = useState(""),
-    [tools, setTools] = useState(""),
-    [results, setResults] = useState("");
-  const [style, setStyle] = useState("professional"),
-    [count, setCount] = useState(4),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  const [preview, setPreview] = useState(null),
-    [selected, setSelected] = useState([]);
-  const writerRef = useRef(null);
-  const baseline = useRef(initialValue || value);
+const styles = [
+  ["professional", "Chuyên nghiệp"], ["concise", "Ngắn gọn"],
+  ["detailed", "Rõ cách thực hiện"], ["quantified", "Ưu tiên kết quả đã có"],
+];
+
+export default function AIWriter({ section, field, initialValue, entry, value = [], disabled,
+  onApply, onGenerate, renderSource, action = null }) {
+  const [style, setStyle] = useState("professional");
+  const [count, setCount] = useState(4);
   const [scope, setScope] = useState("changed");
+  const [tasks, setTasks] = useState(""), [tools, setTools] = useState(""), [results, setResults] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [busy, setBusy] = useState(false), [error, setError] = useState("");
+  const [preview, setPreview] = useState(null), [selected, setSelected] = useState([]);
   const [undo, setUndo] = useState(null);
+  const controller = useRef(null), version = useRef(0), baseline = useRef(initialValue || value);
+  const handledAction = useRef(null);
+  const context = JSON.stringify({ section, field, entry, value });
+  const currentContext = useRef(context);
+  currentContext.current = context;
   const changed = changedLineIndices(value, baseline.current);
-  const targets =
-    !onGenerate && scope === "changed" && changed.length
-      ? changed
-      : value.flatMap((text, index) => (text.trim() ? [index] : []));
+  const targets = action?.issue
+    ? value.flatMap((text,index) => writingQuality({description:[text]}).checks
+        .some((check) => check.id === action.issue && check.status === "warning") ? [index] : [])
+    : !onGenerate && scope === "changed" && changed.length
+      ? changed : value.flatMap((text, index) => text.trim() ? [index] : []);
+  const visible = (preview?.bullets || []).flatMap((bullet, index) => isChangedSuggestion(bullet) ? [index] : []);
+  const groups = preview ? groupWriterSuggestions(value, preview.targets, preview.bullets) : [];
 
-  const [menu, setMenu] = useState(false),
-    [showNotes, setShowNotes] = useState(!value.length),
-    [applyMode, setApplyMode] = useState("replace");
-  useEffect(() => {
-    if (action?.nonce) {
-      setOpen(true);
-      setStyle(action.style);
-      requestAnimationFrame(() =>
-        writerRef.current?.scrollIntoView({
-          block: "center",
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
-            .matches
-            ? "auto"
-            : "smooth",
-        }),
-      );
-    }
-  }, [action?.nonce]);
-  const context = JSON.stringify({ entry, value });
-  const version = useRef(0);
-  useEffect(() => {
-    if (!menu) return;
-    const close = (event) => {
-      if (event.key === "Escape" || !writerRef.current?.contains(event.target))
-        setMenu(false);
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [menu]);
   useEffect(() => {
     version.current++;
+    controller.current?.abort();
     setPreview(null);
+    setSelected([]);
     setError("");
     setBusy(false);
   }, [context, tasks, tools, results, style, count, scope]);
-  async function generate(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setOpen(true);
-    setMenu(false);
-    const current = ++version.current;
-    setBusy(true);
-    setError("");
-    const payload = {
-      section,
-      entry,
-      text: (onGenerate ? value : targets.map((index) => value[index])).join(
-        "\n",
-      ),
-      ...(field ? { field } : {}),
-      tasks,
-      tools,
-      results,
-      style,
-      count,
-    };
-    try {
-      const response = onGenerate
-        ? await onGenerate(payload)
-        : await request("/api/profile-drafts/writer", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-      if (current === version.current) {
-        setPreview({
-          ...response,
-          originalLines: [...value],
-          targets: [...targets],
-        });
-        setSelected(response.bullets.map((_, i) => i));
-      }
-    } catch (e) {
-      if (current === version.current) setError(e.message);
-    } finally {
-      if (current === version.current) setBusy(false);
+  useEffect(() => () => { version.current++; controller.current?.abort(); }, []);
+  useEffect(() => {
+    if (!action?.nonce || handledAction.current === action.nonce) return;
+    if (action.style && action.style !== style) { setStyle(action.style); return; }
+    handledAction.current = action.nonce;
+    if (action.edits?.length) {
+      const edit = action.edits.find((item) => item.field === field);
+      if (!edit || JSON.stringify(edit.original) !== JSON.stringify(value)) return;
+      version.current++;
+      controller.current?.abort();
+      const bullets = edit.proposed.flatMap((text, index) => text !== edit.original[index]
+        ? [{ text, sources: [edit.original[index]], origin: "editorial", change_kind: "editorial_quickfix" }] : []);
+      setBusy(false); setError("");
+      setPreview({ bullets, questions: [], status: "review_required", originalLines: [...value],
+        targets: value.map((_, index) => index), contextKey: context });
+      setSelected(bullets.map((_, index) => index));
+      return;
     }
+    generate();
+  }, [action?.nonce, style]);
+
+  async function generate() {
+    if (disabled) return;
+    controller.current?.abort();
+    const abort = new AbortController();
+    controller.current = abort;
+    const current = ++version.current;
+    const contextKey = context;
+    setBusy(true); setError(""); setPreview(null);
+    try {
+      const lines = onGenerate ? value : targets.map((i) => value[i]);
+      const issues = action?.issue ? [action.issue] : writingQuality({description:lines}).checks
+        .filter((check) => check.status === "warning").map((check) => check.id);
+      const payload = { section, entry, text: lines.join("\n"),
+        ...(field ? { field } : {}), tasks, tools, results, style, count, issues };
+      const response = onGenerate ? await onGenerate(payload, abort.signal)
+        : await request("/api/profile-drafts/writer", { method: "POST",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: abort.signal });
+      if (current !== version.current || currentContext.current !== contextKey) return;
+      setPreview({ ...response, bullets: response.bullets || [], originalLines: [...value], targets: [...targets], contextKey });
+      setSelected((response.bullets || []).flatMap((b, i) => isChangedSuggestion(b) ? [i] : []));
+    } catch (error) {
+      if (current === version.current && error.name !== "AbortError") setError(error.message);
+    } finally { if (current === version.current) setBusy(false); }
   }
-  async function apply(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setBusy(true);
-    setError("");
+
+  async function apply(indices = selected) {
+    if (!preview || disabled || busy || !indices.length || preview.contextKey !== currentContext.current) return;
+    setBusy(true); setError("");
     try {
       const before = [...value];
-      const proposals = selected.map((i) => preview.bullets[i].text);
-      const next = onGenerate
-        ? proposals
-        : mergeWriterEdits(
-            before,
-            coveredTargetIndices(
-              before,
-              preview.targets,
-              selected.map((i) => preview.bullets[i]),
-            ),
-            proposals,
-            applyMode,
-          );
-      await onApply(next, preview, selected, applyMode);
-      if (!onGenerate) {
-        setUndo({ before, after: next });
-        baseline.current = [...next];
-      }
-      setPreview(null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
+      const next = applyWriterSuggestions(before, preview.targets, indices.map((i) => ({
+        ...preview.bullets[i], targetIndices: groups.find((g) => g.proposalIndex === i)?.indices || [],
+      })));
+      await onApply(next, preview, indices, "replace");
+      if (!onGenerate) { setUndo({ before, after: next }); baseline.current = [...next]; }
+      setPreview(null); setSelected([]);
+    } catch (error) { setError(error.message); }
+    finally { setBusy(false); }
   }
-  return (
-    <div
-      ref={writerRef}
-      className="ai-writer writer-inline"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="writer-toolbar">
-        <span>
-          <span className="writer-spark">✦</span>{" "}
-          {value.length
-            ? `${value.filter(Boolean).length} bullet · Viết rõ phần bạn trực tiếp thực hiện`
-            : "Kể ý thô, AI giúp viết thành bullet"}
-        </span>
-        <div className="writer-split">
-          <button
-            type="button"
-            disabled={busy || disabled}
-            className="ai-writer-generate"
-            onClick={generate}
-          >
-            {busy ? (
-              <span
-                className="ai-writer-loading"
-                role="status"
-                aria-label="Đang viết bullet"
-              >
-                <i />
-                <i />
-                <i />
-              </span>
-            ) : (
-              <>
-                ✦{" "}
-                {preview
-                  ? "Tạo lại"
-                  : style === "concise"
-                    ? "Viết gọn"
-                    : count === 1
-                      ? "Đề xuất bullet"
-                      : "AI Writer · Tạo bullet"}
-              </>
-            )}
-          </button>
-          <button
-            type="button"
-            className="writer-menu-toggle"
-            aria-label="Các lựa chọn AI Writer"
-            aria-expanded={menu}
-            disabled={busy || disabled}
-            onClick={(e) => {
-              e.preventDefault();
-              setMenu(!menu);
-            }}
-          >
-            ⌄
-          </button>
-          {menu && (
-            <div className="writer-menu" role="menu">
-              {[
-                ["professional", "Viết lại chuyên nghiệp"],
-                ["concise", "Viết ngắn gọn"],
-                ["detailed", "Làm rõ cách thực hiện"],
-                ["quantified", "Ưu tiên kết quả / số liệu đã có"],
-              ].map(([key, title]) => (
-                <button
-                  type="button"
-                  role="menuitem"
-                  key={key}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setStyle(key);
-                    setCount(4);
-                    setMenu(false);
-                    setOpen(true);
-                  }}
-                >
-                  {style === key ? "✓ " : ""}
-                  {title}
-                </button>
-              ))}
-              <button
-                type="button"
-                role="menuitem"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setCount(1);
-                  setApplyMode("append");
-                  setOpen(true);
-                  setMenu(false);
-                }}
-              >
-                + Đề xuất thêm một bullet
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowNotes(true);
-                  setOpen(true);
-                  setMenu(false);
-                }}
-              >
-                Bổ sung thông tin cho AI
-              </button>
-            </div>
-          )}
+
+  function dismiss(index) {
+    setSelected((old) => old.filter((i) => i !== index));
+    setPreview((old) => old ? { ...old, dismissed: [...(old.dismissed || []), index] } : old);
+  }
+  function suggestions(anchor) {
+    const matches = groups.filter((g) => g.anchor === anchor && visible.includes(g.proposalIndex)
+      && !preview.dismissed?.includes(g.proposalIndex));
+    if (!matches.length) return null;
+    return <div className="writer-inline-suggestions" aria-label="Đề xuất tinh chỉnh">
+      {matches.map(({ bullet, proposalIndex, indices }) => <div className="writer-inline-suggestion" key={proposalIndex}>
+        <span className="writer-inline-kicker">Đề xuất{indices.length > 1 ? ` · Gộp ${indices.length} câu nguồn` : ""}</span>
+        <label className="writer-suggestion-choice">
+          <input type="checkbox" aria-label={`Chọn đề xuất ${proposalIndex + 1}`} checked={selected.includes(proposalIndex)}
+            disabled={busy || disabled} onChange={(event) => setSelected((old) => event.target.checked
+              ? [...old, proposalIndex].sort((a, b) => a - b) : old.filter((i) => i !== proposalIndex))} />
+          <span>{bullet.replacement_lines?.length > 1
+            ? bullet.replacement_lines.map((line,index) => <span key={index} style={{display:'block'}}>• {line}</span>)
+            : bullet.text}</span>
+        </label>
+        <div className="writer-inline-actions">
+          <button type="button" disabled={busy || disabled} onClick={() => apply([proposalIndex])}>Dùng câu này</button>
+          <button type="button" disabled={busy || disabled} onClick={() => dismiss(proposalIndex)}>Bỏ qua</button>
         </div>
+      </div>)}
+    </div>;
+  }
+
+  return <div className="ai-writer writer-inline writer-refinement" onClick={(event) => event.stopPropagation()}>
+    {renderSource ? renderSource(suggestions, !!preview) : value.map((line, index) =>
+      <div className="writer-source-line" key={index}><p>{line}</p>{suggestions(index)}</div>)}
+    {suggestions(null)}
+    <div className="writer-toolbar">
+      <div className="writer-split">
+        <button type="button" disabled={busy || disabled} className="ai-writer-generate" onClick={() => generate()}>
+          {busy ? <span role="status">Đang tinh chỉnh…</span> : preview ? "Thử cách viết khác" : "Tinh chỉnh"}
+        </button>
+        <button type="button" className="writer-menu-toggle" aria-label="Tùy chọn tinh chỉnh" aria-expanded={settingsOpen}
+          disabled={busy || disabled} onClick={() => setSettingsOpen((open) => !open)}>⌄</button>
       </div>
-      {!onGenerate &&
-        undo &&
-        JSON.stringify(value) === JSON.stringify(undo.after) && (
-          <div className="writer-undo" role="status">
-            Đã áp dụng cách viết cho phần đã chọn.
-            <button
-              type="button"
-              disabled={busy || disabled}
-              onClick={async () => {
-                setBusy(true);
-                setError("");
-                try {
-                  await onApply(undo.before);
-                  baseline.current = [...undo.before];
-                  setUndo(null);
-                } catch (e) {
-                  setError(e.message);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              Hoàn tác chỉnh câu
-            </button>
-          </div>
-        )}
-      {open && (
-        <div className="ai-writer-body">
-          <div className="writer-panel-heading">
-            <div>
-              <strong>
-                {preview ? "Đề xuất của AI Writer" : "Chuẩn bị viết bullet"}
-              </strong>
-              <small>
-                {entry.project_name ||
-                  entry.company ||
-                  entry.title ||
-                  entry.activity_name ||
-                  "Nội dung CV"}
-              </small>
-            </div>
-            <button
-              type="button"
-              aria-label="Thu gọn AI Writer"
-              onClick={(e) => {
-                e.preventDefault();
-                setOpen(false);
-              }}
-            >
-              ×
-            </button>
-          </div>
-          {!onGenerate && value.some((line) => line.trim()) && (
-            <div className="writer-scope">
-              <label>
-                Phạm vi chỉnh câu
-                <select
-                  aria-label="Phạm vi chỉnh câu"
-                  value={scope}
-                  disabled={busy}
-                  onChange={(e) => {
-                    setScope(e.target.value);
-                    setPreview(null);
-                    version.current++;
-                  }}
-                >
-                  <option value="changed">
-                    {changed.length
-                      ? `Chỉ ${changed.length} bullet mới / vừa sửa`
-                      : "Các bullet trong ô này"}
-                  </option>
-                  <option value="all">Toàn bộ bullet trong ô này</option>
-                </select>
-              </label>
-              <small>Các ô khác và bullet ngoài phạm vi được giữ nguyên.</small>
-            </div>
-          )}
-          <div className="ai-writer-options">
-            <select
-              aria-label="Phong cách AI Writer"
-              value={style}
-              onChange={(e) => setStyle(e.target.value)}
-              disabled={busy}
-            >
-              <option value="professional">Chuyên nghiệp</option>
-              <option value="concise">Ngắn gọn</option>
-              <option value="detailed">Làm rõ cách thực hiện</option>
-              <option value="quantified">Ưu tiên kết quả đã có</option>
-            </select>
-            <select
-              aria-label="Số bullet tối đa"
-              value={count}
-              onChange={(e) => setCount(Number(e.target.value))}
-              disabled={busy}
-            >
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <option key={n} value={n}>
-                  Tối đa {n} bullet
-                </option>
-              ))}
-            </select>
-          </div>
-          {!onGenerate && (
-            <details
-              open={showNotes}
-              onToggle={(e) => setShowNotes(e.currentTarget.open)}
-              className="writer-notes"
-            >
-              <summary>Bổ sung công việc, công cụ hoặc kết quả thực tế</summary>
-              <span className="ai-writer-label">Bạn đã trực tiếp làm gì?</span>
-              <textarea
-                aria-label="AI Writer: công việc thực tế"
-                value={tasks}
-                onChange={(e) => setTasks(e.target.value)}
-                disabled={busy || disabled}
-                placeholder="Mỗi dòng một việc bạn thực sự làm; không cần viết trau chuốt."
-              />
-              <span className="ai-writer-label">
-                Công cụ / cách làm · tùy chọn
-              </span>
-              <input
-                aria-label="AI Writer: công cụ"
-                value={tools}
-                onChange={(e) => setTools(e.target.value)}
-                disabled={busy || disabled}
-                placeholder="Chỉ những công cụ bạn đã sử dụng"
-              />
-              <span className="ai-writer-label">
-                Đầu ra / kết quả · tùy chọn
-              </span>
-              <textarea
-                aria-label="AI Writer: kết quả"
-                value={results}
-                onChange={(e) => setResults(e.target.value)}
-                disabled={busy || disabled}
-                placeholder="Sản phẩm hoặc kết quả có thật. Không cần tự đặt số liệu."
-              />
-            </details>
-          )}
-          {showNotes && (
-            <button
-              type="button"
-              disabled={busy || disabled}
-              onClick={generate}
-            >
-              ✦ Tạo từ thông tin bổ sung
-            </button>
-          )}
-          {error && <p role="alert">{error}</p>}
-          {preview && (
-            <div className="ai-writer-preview">
-              <strong>
-                {preview.status === "needs_input"
-                  ? "Cần thêm thông tin để viết đúng"
-                  : "Chọn bullet bạn muốn sử dụng"}
-              </strong>
-              {preview.engine === "editorial" && (
-                <small>
-                  Bản biên tập từ nguồn đang được hiển thị; bạn có thể thử tạo
-                  lại bằng mô hình.
-                </small>
-              )}
-              {preview.engine === "mixed" && (
-                <small>
-                  Một số câu được giữ theo bản gốc vì đề xuất AI chưa đạt kiểm tra nội dung.
-                </small>
-              )}
-              {preview.remaining_facts?.length > 0 && (
-                <p role="status">
-                  Còn {preview.remaining_facts.length} ý ngoài số bullet đã chọn.
-                  Các ý này sẽ được giữ nguyên khi áp dụng; bạn có thể chỉnh tiếp từng phần.
-                </p>
-              )}
-              <div className="writer-before-after">
-                <strong>Trước khi chỉnh</strong>
-                <ul>
-                  {preview.targets.map((index) => (
-                    <li key={index}>{preview.originalLines[index]}</li>
-                  ))}
-                </ul>
-                {!preview.targets.length && (
-                  <p>Nội dung từ thông tin bổ sung bên dưới.</p>
-                )}
-                <strong>Đề xuất sau khi chỉnh</strong>
-              </div>
-              {preview.rejected > 0 && (
-                <p role="status">
-                  Đã loại {preview.rejected} đề xuất không đạt kiểm tra nguồn.
-                </p>
-              )}
-              {preview.bullets.map((b, i) => (
-                <div className="ai-writer-bullet" key={i}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(i)}
-                      disabled={busy}
-                      onChange={(e) =>
-                        setSelected(
-                          e.target.checked
-                            ? [...selected, i].sort((a, b) => a - b)
-                            : selected.filter((x) => x !== i),
-                        )
-                      }
-                    />
-                    <span>{b.text}</span>
-                  </label>
-                  <details>
-                    <summary>Đối chiếu nội dung gốc</summary>
-                    {b.sources.map((t, j) => (
-                      <p key={j}>{t}</p>
-                    ))}
-                  </details>
-                </div>
-              ))}
-              {preview.questions.length > 0 && (
-                <details open={preview.status === "needs_input"}>
-                  <summary>Bổ sung gì để bullet rõ hơn?</summary>
-                  <ul>
-                    {preview.questions.map((q) => (
-                      <li key={q}>{q}</li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-              {preview.bullets.length > 0 && (
-                <>
-                  <div className="writer-apply-mode">
-                    <label>
-                      <input
-                        type="radio"
-                        checked={applyMode === "replace"}
-                        onChange={() => setApplyMode("replace")}
-                      />
-                      Thay các bullet trong phạm vi đã chọn
-                    </label>
-                    <label>
-                      <input
-                        type="radio"
-                        checked={applyMode === "append"}
-                        onChange={() => setApplyMode("append")}
-                      />
-                      Thêm vào cuối danh sách
-                    </label>
-                  </div>
-                  <small>
-                    Chỉ áp dụng các câu đúng với phần bạn đã làm. Đề xuất chưa
-                    thay đổi nội dung hiện tại.
-                  </small>
-                  <div className="writer-result-actions">
-                    <button
-                      type="button"
-                      className="writer-apply"
-                      disabled={busy || disabled || !selected.length}
-                      onClick={apply}
-                    >
-                      Áp dụng {selected.length} bullet
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setPreview(null);
-                      }}
-                    >
-                      Bỏ đề xuất
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      )}
     </div>
-  );
+    {settingsOpen && <div className="writer-inline-options">
+      <label>Phong cách<select aria-label="Phong cách tinh chỉnh" value={style} disabled={busy || disabled} onChange={(event) => setStyle(event.target.value)}>
+        {styles.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+      </select></label>
+      <label>Số đề xuất tối đa<select aria-label="Số đề xuất tối đa" value={count} disabled={busy || disabled} onChange={(event) => setCount(Number(event.target.value))}>
+        {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}
+      </select></label>
+      {!onGenerate && <label>Phạm vi<select aria-label="Phạm vi tinh chỉnh" value={scope} disabled={busy || disabled} onChange={(event) => setScope(event.target.value)}>
+        <option value="changed">{changed.length ? `${changed.length} câu mới hoặc vừa sửa` : "Các câu trong ô này"}</option>
+        <option value="all">Toàn bộ câu trong ô này</option>
+      </select></label>}
+    </div>}
+    {!onGenerate && <details className="writer-inline-notes" open={notesOpen} onToggle={(event) => setNotesOpen(event.currentTarget.open)}>
+      <summary>Bổ sung dữ kiện cho đề xuất · tùy chọn</summary>
+      <label>Công việc thực tế<textarea aria-label="Công việc bổ sung" value={tasks} disabled={busy || disabled}
+        onChange={(event) => setTasks(event.target.value)} placeholder="Mỗi dòng một việc bạn trực tiếp thực hiện" /></label>
+      <label>Công cụ hoặc phương pháp<input aria-label="Công cụ bổ sung" value={tools} disabled={busy || disabled} onChange={(event) => setTools(event.target.value)} /></label>
+      <label>Kết quả đã có<textarea aria-label="Kết quả bổ sung" value={results} disabled={busy || disabled}
+        onChange={(event) => setResults(event.target.value)} placeholder="Chỉ thêm kết quả có thật; có thể để trống" /></label>
+    </details>}
+    {error && <p className="error" role="alert">{error}</p>}
+    {preview && <div className="writer-inline-status" aria-live="polite">
+      {preview.error_message && <p className="error" role="alert">{preview.error_message}</p>}
+      {visible.length === 0 && preview.status !== "needs_input" && <p role="status">
+        {preview.status === "unavailable" ? "Chưa kết nối được AI để sửa câu. Bạn thử lại." : preview.status === "no_safe_improvement" || preview.unresolved?.length
+          ? "Chưa có cách sửa đạt tiêu chí và giữ đủ dữ kiện. Nội dung gốc được giữ nguyên."
+          : "Chưa có đề xuất thay đổi câu này."}
+      </p>}
+      {visible.length > 0 && preview.unresolved?.length > 0 && <p role="status">Một số lỗi vẫn cần chỉnh thêm; các đề xuất bên dưới chỉ áp dụng phần đã sửa được.</p>}
+      {preview.status === "needs_input" && preview.questions?.length > 0 && <details open>
+        <summary>{preview.status === "needs_input" ? "Cần thêm dữ kiện để tinh chỉnh" : "Gợi ý bổ sung thông tin"}</summary>
+        <ul>{preview.questions.map((question) => <li key={question}>{question}</li>)}</ul>
+      </details>}
+      {visible.length > 0 && <div className="writer-result-actions">
+        <button type="button" className="writer-apply" disabled={busy || disabled || !selected.length} onClick={() => apply()}>
+          Áp dụng {selected.length} đề xuất đã chọn
+        </button>
+        <button type="button" disabled={busy || disabled} onClick={() => { setPreview(null); setSelected([]); }}>Giữ nguyên tất cả</button>
+      </div>}
+    </div>}
+    {!onGenerate && undo && JSON.stringify(value) === JSON.stringify(undo.after) && <div className="writer-undo">
+      <button type="button" disabled={busy || disabled} onClick={async () => {
+        setBusy(true); setError("");
+        try { await onApply(undo.before); baseline.current = [...undo.before]; setUndo(null); }
+        catch (error) { setError(error.message); } finally { setBusy(false); }
+      }}>Hoàn tác</button>
+    </div>}
+  </div>;
 }

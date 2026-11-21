@@ -25,7 +25,7 @@ _analysis_locks: dict[str, Lock] = {}
 
 
 def analysis_key(job: JobPosting) -> str:
-    return hashlib.sha256(f"{job.content_hash}|{ANALYSIS_VERSION}|{settings.jd_model}".encode()).hexdigest()
+    return hashlib.sha256(f"{job.content_hash}|{ANALYSIS_VERSION}|{settings.identity_for_task('jd')}".encode()).hexdigest()
 
 
 def cached_analysis(job: JobPosting):
@@ -34,7 +34,7 @@ def cached_analysis(job: JobPosting):
         if pointer is None:
             return None
         result = job_repository.load_job_analysis(pointer["job_id"], job_repository.DEFAULT_JOB_STORAGE)
-        if result and result.analysis_version == ANALYSIS_VERSION and result.content_hash == job.content_hash and result.model == settings.jd_model:
+        if result and result.analysis_version == ANALYSIS_VERSION and result.content_hash == job.content_hash and result.model == settings.model_for_task('jd'):
             return result
     except (ValueError, OSError, KeyError):
         pass
@@ -57,7 +57,7 @@ def analyze_selected_job(job: JobPosting):
         requirements = JobRequirements.model_validate(state["job_requirements"])
         result = job_repository.save_job_analysis(
             requirements, state.get("warnings", []), job.source_url, job_repository.DEFAULT_JOB_STORAGE,
-            analysis_version=ANALYSIS_VERSION, content_hash=job.content_hash, model=settings.jd_model,
+            analysis_version=ANALYSIS_VERSION, content_hash=job.content_hash, model=settings.model_for_task('jd'),
         )
         write_aux("analysis_cache", key, {"job_id": result.job_id})
         return result, False
@@ -143,7 +143,7 @@ def evaluate_job(key: str, profile_id: str | None, *, cv_id: str | None = None) 
     response = DashboardEvaluation(
         status="needs_profile" if record is None else "insufficient_data",
         job=job, analysis=analysis, profile_id=profile_id, profile=record.profile if record else None,
-        analysis_version=ANALYSIS_VERSION, model=settings.jd_model, analysis_cached=hit, warnings=warnings,
+        analysis_version=ANALYSIS_VERSION, model=settings.model_for_task('jd'), analysis_cached=hit, warnings=warnings,
         input_type="cv" if cv_id else "profile", input_id=profile_id,
     )
     if cv_id:

@@ -1,3 +1,4 @@
+from backend.app.core.workspace import storage_path
 import json
 import re
 import os
@@ -29,6 +30,7 @@ def save_job_analysis(
     content_hash: str | None = None,
     model: str | None = None,
 ) -> JobAnalysisResponse:
+    storage_dir = storage_path(storage_dir)
     job_id = uuid4().hex
     response = JobAnalysisResponse(
         job_id=job_id,
@@ -66,7 +68,10 @@ def load_job_analysis(
     job_id: str,
     storage_dir: Path = DEFAULT_JOB_STORAGE,
 ) -> JobAnalysisResponse | None:
+    storage_dir = storage_path(storage_dir)
     record = database.get_record("analyses", _safe_job_id(job_id)) if database.enabled() else None
+    if record is None and database.enabled():
+        return None
     if record is None:
         path = storage_dir / f"{_safe_job_id(job_id)}.json"
         if not path.exists():

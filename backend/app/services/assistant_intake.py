@@ -56,7 +56,7 @@ def apply_updates(intake, updates, message):
                 else:
                     field = 'description' if patch.field == 'work' and patch.section in {'experience','project','involvement'} else patch.field
                     value = patch.value
-                    if field in {'description','responsibilities','achievements','technologies_used','contributions','outcomes','technologies','details','items'} and isinstance(value,str): value = [value]
+                    if field in {'description','responsibilities','technologies','details','items'} and isinstance(value,str): value = [value]
                     if field in FORBIDDEN or field not in MODELS[patch.section].model_fields:
                         raise ValueError('Unsupported field')
                     if patch.section == 'contact':
@@ -99,7 +99,7 @@ REQUIRED = {
 INTRO = {
     'education': 'Tiếp theo là học vấn. Bạn cho mình biết trường / cơ sở đào tạo và ngành học nhé. Có thể thêm thời gian học, bằng cấp, điểm số nếu muốn.',
     'experience': 'Đến phần kinh nghiệm: bạn từng làm ở đâu, vị trí gì và trực tiếp làm những việc nào? Có thể thêm thời gian làm việc. Nếu chưa có kinh nghiệm, cứ nhắn “chưa có”.',
-    'project': 'Tiếp theo là dự án / đồ án. Bạn kể tên dự án, vai trò và những việc mình trực tiếp thực hiện nhé. Nếu chưa có, nhắn “chưa có”.',
+    'project': 'Tiếp theo là dự án / đồ án. Bạn kể tên dự án, vai trò và những việc mình trực tiếp thực hiện nhé. Có thể kèm công nghệ đã dùng và link GitHub của dự án nếu có. Nếu chưa có dự án, nhắn “chưa có”.',
     'skills': 'Đến phần kỹ năng. Bạn dùng được những kỹ năng, công cụ hoặc ngoại ngữ nào? Chỉ cần kể những gì bạn thực sự biết; nếu chưa muốn thêm, nhắn “bỏ qua”.',
     'involvement': 'Bạn có hoạt động ngoại khóa, tình nguyện hay câu lạc bộ nào muốn đưa vào CV không? Nếu có, kể tên hoạt động, vai trò và việc bạn đã làm. Nếu chưa có, nhắn “chưa có”.',
     'summary': 'Cuối cùng, bạn có muốn thêm vài câu giới thiệu bản thân hoặc định hướng nghề nghiệp không? Bạn có thể viết ý thô để tinh chỉnh sau, hoặc nhắn “bỏ qua”.',
@@ -129,7 +129,7 @@ def remaining_fields(intake):
                 path = f'{section}.{index}.{field}'
                 if path in skipped: continue
                 if field == 'work':
-                    present = any(entry.get(key) for key in ('description','responsibilities','contributions','achievements','outcomes'))
+                    present = any(entry.get(key) for key in ('description','responsibilities','technologies'))
                 elif section == 'experience' and field == 'job_title': present = entry.get('job_title') or entry.get('role')
                 elif section == 'education' and field == 'major': present = entry.get('major') or entry.get('field_of_study') or entry.get('degree')
                 elif section == 'involvement' and field == 'activity_name': present = entry.get('activity_name') or entry.get('organization')
@@ -365,6 +365,7 @@ def validated_signal(signal, text):
     if signal.kind == 'not_available' and not absence: return None
     if signal.kind == 'skip' and not (absence or memory or re.search(r'\b(?:bo qua|skip|khong muon|chua muon|khong them|de sau|khong can|khong bo sung|chuyen phan tiep|sang phan tiep)\b',plain)): return None
     if signal.kind == 'unknown' and not memory: return None
+    if signal.kind == 'write_bullets' and not re.search(r'\b(?:viet|tao|tinh chinh|chinh sua|viet lai|toi uu)\b.{0,45}\b(?:bullet|cau|mo ta|noi dung|y)\b|\bai writer\b', plain): return None
     return signal
 
 
@@ -397,7 +398,7 @@ def question(path, intake):
 
     stage = path.split('.')[0]
     if path == 'contact.full_name': return 'Bắt đầu với thông tin cá nhân nhé. Bạn muốn ghi họ và tên nào trên CV? Bạn có thể gửi kèm email hoặc số điện thoại liên hệ.'
-    if path == 'contact.reach': return 'Phần thông tin cá nhân còn thiếu email hoặc số điện thoại hợp lệ. Bạn muốn nhà tuyển dụng liên hệ bằng email hay số nào?'
+    if path == 'contact.reach': return 'Nhà tuyển dụng cần thông tin liên hệ. Bạn nhập email hoặc số điện thoại hợp lệ nhé.'
     from backend.app.services.assistant_skills import skill_question
     detail = skill_question(path,intake)
     if detail: return detail
@@ -432,6 +433,7 @@ def collect(session, decision, text, task_id, polish_with_model=False):
     bound=contextual_answer((previous or blank_intake())['profile'],(before or ['complete'])[0],text) if not fast_signal else None
     if bound and not decision.updates: decision=bound
     signal = validated_signal(fast_signal or decision.intake_signal, text)
+    polish_with_model = bool(polish_with_model and signal and signal.kind == 'write_bullets')
     explaining = bool(signal and signal.kind == 'explain' and normalized(signal.evidence) in normalized(text))
     wording = bool(signal and signal.kind=='wording')
     accepting = bool(signal and signal.kind=='accept_wording')
@@ -526,7 +528,9 @@ def collect(session, decision, text, task_id, polish_with_model=False):
         if stage in STAGES and (not history or history[-1] != stage): history.append(stage)
     intake['step_history'] = history[-24:]
     intake['current_step'] = missing[0] if missing else 'complete'
-    reply = decision.reply.strip() or 'Mình đã nhận thông tin bạn vừa chia sẻ.'
+    # The intake owns follow-up requests; the model only answers actual questions.
+    model_reply = decision.reply.strip() if bound or decision.intent in {'advice', 'clarify'} or '?' in text or asks_for_explanation(text) else ''
+    reply = model_reply or 'Mình đã nhận thông tin bạn vừa chia sẻ.'
     if wording_reply:
         reply = wording_reply
     elif navigating:
@@ -560,7 +564,7 @@ def collect(session, decision, text, task_id, polish_with_model=False):
         from backend.app.services.assistant_answers import entry_reference
         reply = f'Mình đã ghi nhận {entry_reference(intake["profile"],"project",project_index)}; loại dự án: {entry.get("project_type")}. ' + (f'Phần bạn trực tiếp làm: {entry["role"]}. Mình đã có mô tả phần bạn đảm nhận, không cần liệt kê thêm vai trò.' if entry.get('role') else 'Mình sẽ hỏi thêm phần bạn trực tiếp đảm nhận nếu chưa có thông tin.')
     if len(updates) > 1 and not rejected and not wording:
-        labels = {'full_name':'họ tên','email':'email','phone':'điện thoại','institution':'trường','major':'ngành học','project_name':'tên dự án','project_type':'loại dự án','role':'vai trò','job_title':'vị trí','company':'nơi làm việc','description':'công việc','contributions':'đóng góp','technologies':'công nghệ','items':'kỹ năng'}
+        labels = {'full_name':'họ tên','email':'email','phone':'điện thoại','institution':'trường','major':'ngành học','project_name':'tên dự án','project_type':'loại dự án','job_title':'vị trí','company':'nơi làm việc','description':'công việc','technologies':'công nghệ','github_url':'GitHub','demo_url':'link demo','project_url':'link dự án','items':'kỹ năng'}
         details = []
         for patch in updates:
             value = ', '.join(patch.value) if isinstance(patch.value,list) else patch.value
@@ -571,7 +575,11 @@ def collect(session, decision, text, task_id, polish_with_model=False):
     if side_answer and not wording and (not explaining or mixed_explanation):
         reply += '\n\n' + side_answer
     if missing:
-        if not (explaining or wording or (accepting and not accepted_wording)): reply += '\n\n' + question(missing[0], intake)
+        if not (explaining or wording or (accepting and not accepted_wording)):
+            if missing[0] == 'contact.reach' and not updates and not model_reply and not side_answer:
+                reply = question(missing[0], intake)
+            else:
+                reply += '\n\n' + question(missing[0], intake)
     elif not (wording or (accepting and not accepted_wording)):
         reply += '\n\nMình đã đi qua tất cả các phần của CV. Bạn có thể yêu cầu sửa thêm, hoặc mở form kiểm tra thông tin rồi chọn mẫu CV.'
     stage = missing[0].split('.')[0] if missing else None
@@ -606,6 +614,6 @@ def collect(session, decision, text, task_id, polish_with_model=False):
     if not missing:
         draft_id = 'draft_' + task_id.removeprefix('task_')
         intake['draft_id'] = draft_id
-        result.update(href=f'/workspace/resumes/new/{draft_id}?resumeTemplate=classic',
+        result.update(href=f'/workspace/resumes/new?draft={draft_id}',
             _profile_draft=dict(draft_id=draft_id,base_profile_id=None,version=1,status='editing',profile=intake['profile'],updated_at=utc_now(),confirmed_profile_id=None,confirmation_event_id=None))
     return result

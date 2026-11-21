@@ -1,0 +1,405 @@
+[
+  {
+    "id": "simple",
+    "slug": "tiny_1",
+    "name": "Sinh Viên",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/tiny_1",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=tiny_1&lang=vi",
+    "html_sha256": "c87d93d5a3e09fc45dd04527376bf1af0b516dbfe3238a55522ba36f791fd9d4",
+    "css_sha256": "55952b35031acd6c59f83bf98c94716f766e01ebb0eb73c48399ef1df66bc6c9",
+    "blocks": [
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity",
+      "cvo-profile"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "clean",
+    "slug": "cv_color",
+    "name": "Màu sắc",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/cv_color",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=cv_color&lang=vi",
+    "html_sha256": "329d0ad5c02e8a716ac7e33937418e5c587b0a7b294b2df6c4bc7e583ee0a738",
+    "css_sha256": "10cc7ce780cdfe903b1a99fdf7ccc494b8c16d7bacd601c1c368f0e51b25581d",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "minimal",
+    "slug": "basic_2",
+    "name": "Basic 2",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/basic_2",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=basic_2&lang=vi",
+    "html_sha256": "883cdd95196ced90a481f4a498fffbfd4354a88033fa9bd0bcfff380d44c0602",
+    "css_sha256": "0e8109987e3f3f786bca6f5ccf59822b0cb3cf3ed1355f9cc17f9eee41e55a93",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "compact",
+    "slug": "impressive_5",
+    "name": "Ấn tượng 5",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/impressive_5",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=impressive_5&lang=vi",
+    "html_sha256": "7ff1b8c5c8fbe68c4fca43d553be66a453dea6a481a4b7b026ea7f9fd8981113",
+    "css_sha256": "183cd25247499a872fc14e4004ccadf8eadb4c922345fad79b218ea3485562ee",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "executive",
+    "slug": "pro_3",
+    "name": "Chuyên Nghiệp 3",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/pro_3",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=pro_3&lang=vi",
+    "html_sha256": "b3e36a9314d9c257ba1560d6f21904cace909645f62918fafc2a05476c38ee06",
+    "css_sha256": "ca490f9f4f1d2d064c679e3f22be8c8c8c3a56fd3b20abdb66ec08b61eca0e1b",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "corporate",
+    "slug": "outstanding_3",
+    "name": "Outstanding 3",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/outstanding_3",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=outstanding_3&lang=vi",
+    "html_sha256": "ee5316f67c75fa7c80ca5f3338673d37f8988f5307922b2dedd95982d11d8735",
+    "css_sha256": "656aba9d55b02d535ef687c2623a6f77412a41b4d118b76a193e960e678fee57",
+    "blocks": [
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "consultant",
+    "slug": "modern_3",
+    "name": "Hiện Đại 3",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/modern_3",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=modern_3&lang=vi",
+    "html_sha256": "50992e3db3abb3968b9ad3a2f1558c24806f5afd5a425b8d2354c0cf3d4e675e",
+    "css_sha256": "fa47608fef9a53297dcfdf764fbae3ee0c68b8e565ed489675aaafe4349f2252",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "precision",
+    "slug": "outstanding_7",
+    "name": "Outstanding 7",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/outstanding_7",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=outstanding_7&lang=vi",
+    "html_sha256": "e39dbf965589ca3134a81372d551e7fb7f297154f9a2913ddfbd3c2ea8459c4b",
+    "css_sha256": "6140f1c0f40dad4828563bc68d11072b25b870c5b60fdd6845653abb59e06fd0",
+    "blocks": [
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "modern",
+    "slug": "modern_5",
+    "name": "Hiện Đại 5",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/modern_5",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=modern_5&lang=vi",
+    "html_sha256": "40e6727d294f9f6b5ac6e7eacdbee24a2fdbbf098b6f80a62d4941ced5bc0d45",
+    "css_sha256": "184e62a04c9319b7a992aef4b0e8b7298ec8a7188b5fdd8b3a68b3140162f9c0",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "sidebar",
+    "slug": "timeline_clean_2",
+    "name": "Dòng Thời Gian 2",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/timeline_clean_2",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=timeline_clean_2&lang=vi",
+    "html_sha256": "5e1398cb3bfe917b2712b427c91fb87764abab30fa528e6fb145afc455d320df",
+    "css_sha256": "843bba4a1476c09ece5f34cafaa97a9696c322c74c0a336b868b36f562c28955",
+    "blocks": [
+      "cvo-profile",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity",
+      "cvo-objective"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "metro",
+    "slug": "outstanding_11",
+    "name": "Outstanding 11",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/outstanding_11",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=outstanding_11&lang=vi",
+    "html_sha256": "26ecb181cad5e34db76ad94ca04d1311f22fcfaeab4e5e67bff8774d21ee73ec",
+    "css_sha256": "b31d5338c8b99b01fe14e86c9c640c6452b9b52ab8df6259e0ee68604264de90",
+    "blocks": [
+      "cvo-objective",
+      "cvo-profile",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "split",
+    "slug": "delicate_1",
+    "name": "Tinh tế 1",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/delicate_1",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=delicate_1&lang=vi",
+    "html_sha256": "12491fe760eb790f2e3991723494d89e5eaa5279eb47937afc69249520b2ca10",
+    "css_sha256": "a3b6ed8d125350732a61706cbfc8c9c14db5b577035690c3d7a5eadef9631eeb",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "creative",
+    "slug": "outstanding_5",
+    "name": "Outstanding 5",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/outstanding_5",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=outstanding_5&lang=vi",
+    "html_sha256": "3b3e0b809c297ebe7b7ca6816e5459f972f8d08542db702eab2519c0b205ba4a",
+    "css_sha256": "9ca0972ec7800af66e8cb330bb7df5396db7c9dd64191052dfb6e77a30af6a12",
+    "blocks": [
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "editorial",
+    "slug": "outstanding_9",
+    "name": "Outstanding 9",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/outstanding_9",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=outstanding_9&lang=vi",
+    "html_sha256": "f5b67fc285c699bec76f962a37cad98e6963174ba2c9c5a8248602c9861a9d4f",
+    "css_sha256": "2607a5c45a1c09b39eaa52897ec1c894b416c64273c8e526a0567701fcd75afb",
+    "blocks": [
+      "intro-section",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "banner",
+    "slug": "chrome",
+    "name": "Chrome",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/chrome",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=chrome&lang=vi",
+    "html_sha256": "e83254bdd3341c7df30ea082266029543a678fb6c3e5750ca1fc2c0010c5cb74",
+    "css_sha256": "4d81fd56a6a8c942b8993a866cc66f2500908ebabbafc52743528e0f912f5a05",
+    "blocks": [
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "accent",
+    "slug": "toppier",
+    "name": "Toppier",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/toppier",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=toppier&lang=vi",
+    "html_sha256": "9d2567a6c57641fd3a9edc57f5d6b7984c8243f32d014b3037a3bc9c87d65f3a",
+    "css_sha256": "3f1716ff3092361571db0c54483c08da9fb1a551d94034d60392aa8e32f767ca",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "classic",
+    "slug": "senior_2",
+    "name": "Senior 2",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/senior_2",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=senior_2&lang=vi",
+    "html_sha256": "02730ef3cfb046e337f2e0bcfe1122cac61e8772fdf365ab44204dbae4886c63",
+    "css_sha256": "26e093bd5cdec87e6d5bccac8d5cc2e1f219dacd5b3e6a5920c0c83c691ae70f",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": false
+  },
+  {
+    "id": "academic",
+    "slug": "classic_1",
+    "name": "Cổ Điển 1",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/classic_1",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=classic_1&lang=vi",
+    "html_sha256": "e2e26c368405d17a4b34e74398bb52a2555c54f9adb7b8f5a9a968a4e61b8401",
+    "css_sha256": "fca95f3dafe1a241f6fa94d00fcaf193caf07bf5e5d5bfc1451f5caa7834eb7d",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": false
+  },
+  {
+    "id": "harvard",
+    "slug": "onepage_classic",
+    "name": "Một Trang Cổ Điển",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/onepage_classic",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=onepage_classic&lang=vi",
+    "html_sha256": "938af828bf520f464fbb107aa5cd8694176817ed265b99fdbab943f790254247",
+    "css_sha256": "9ae6f9ab9029941ec5bf2057144cf63eac736e13e2070bd370f34bed47f3d5fa",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": false
+  },
+  {
+    "id": "harvard-compact",
+    "slug": "software_engineer",
+    "name": "Kỹ Sư Phần Mềm",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/software_engineer",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=software_engineer&lang=vi",
+    "html_sha256": "6dd6544e61c2b594d0c84d812b87182c50c57dc41a013ac8afe881dd6ec22f01",
+    "css_sha256": "14af04e9956617bacaaf2bd5d65423656d602ad83b33a11e8ebed4f5d4128506",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": false
+  },
+  {
+    "id": "ats",
+    "slug": "dev_1",
+    "name": "Lập Trình Viên",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/dev_1",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=dev_1&lang=vi",
+    "html_sha256": "a06768c3d0675c96e8ce04f83ff4d5e608f49e04eb58d6cedfc62935f7aa8b48",
+    "css_sha256": "e08bb435dc9d454aa4eef026a350e92051c879612712d71fcfba3dc0319f6633",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-experience",
+      "cvo-activity",
+      "cvo-education"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "ats-jake",
+    "slug": "dev_2",
+    "name": "Lập trình viên 2",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/dev_2",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=dev_2&lang=vi",
+    "html_sha256": "cfef7243a2ccd3e8b54b4519c38ec3ff4ab5359c23ba252d7e995f772d76958f",
+    "css_sha256": "78ca375492dc7c98523c550a3012b537c0ecea84afd92a8490487212b1222dc8",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-education",
+      "cvo-experience",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "ats-technical",
+    "slug": "outstanding_2",
+    "name": "Outstanding 2",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/outstanding_2",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=outstanding_2&lang=vi",
+    "html_sha256": "93bc826ef04c0fb82c4a838e66e7768e78f57807d0bc3148727d54292cab61d5",
+    "css_sha256": "ab8daaa0a45d75c36776af842c571001dd567728c9efb7f696562de76ba0a31c",
+    "blocks": [
+      "cvo-profile",
+      "cvo-objective",
+      "cvo-experience",
+      "cvo-education",
+      "cvo-activity"
+    ],
+    "two_column": true
+  },
+  {
+    "id": "ats-graduate",
+    "slug": "hello",
+    "name": "Hello",
+    "source_url": "https://www.topcv.vn/mau-cv-tieng-viet/hello",
+    "preview_url": "https://www.topcv.vn/preview-cv-template?iframe=true&name=hello&lang=vi",
+    "html_sha256": "b724c7c025393b108d6512ce022ac90ce61f2e75e447936bbf9e7b91cde50eef",
+    "css_sha256": "0b1a39622b1307f34f69d0347223288445f9a81f2cbd9f41f9cbab07ad36a21d",
+    "blocks": [
+      "cvo-objective",
+      "cvo-experience",
+      "cvo-education",
+      "cvo-activity"
+    ],
+    "two_column": true
+  }
+]

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
 export const statusNames = {
   untracked: "Chưa theo dõi",
   saved: "Đang chuẩn bị",
@@ -117,7 +117,7 @@ export default function ApplicationPanel({ job, evaluation }) {
           ) : (
             <p className="notice">
               Chưa chọn CV. Bạn có thể{" "}
-              <Link to="/workspace/resumes">chuẩn bị CV trong thư viện</Link>{" "}
+              <Link to="/workspace">chuẩn bị CV trong Tổng quan</Link>{" "}
               hoặc tự tiếp tục trên nguồn.
             </p>
           )}

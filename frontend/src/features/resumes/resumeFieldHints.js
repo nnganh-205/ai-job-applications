@@ -39,14 +39,6 @@ const common = {
   ],
   company: ["Tên công ty hoặc đơn vị bạn từng làm việc.", "Nhập tên đơn vị"],
   is_current: ["Đánh dấu nếu bạn vẫn làm việc ở đây.", ""],
-  achievements: [
-    "Kết quả hoặc thành tựu thật. Chỉ nêu số liệu khi bạn có căn cứ; có thể bỏ trống.",
-    "Mỗi dòng một kết quả bạn thực sự đạt được",
-  ],
-  technologies_used: [
-    "Công cụ, ngôn ngữ hoặc phần mềm bạn trực tiếp sử dụng. Mỗi dòng một mục.",
-    "Ví dụ:\nReact\nJavaScript",
-  ],
   institution: [
     "Tên trường, học viện hoặc cơ sở đào tạo bạn đã theo học.",
     "Nhập tên trường / cơ sở đào tạo",
@@ -65,25 +57,17 @@ const common = {
     "Tên dự án học tập, cá nhân hoặc công việc của bạn.",
     "Ví dụ: Ứng dụng quản lý công việc",
   ],
-  role: [
-    "Vai trò và phần việc thực tế của bạn, đặc biệt khi làm theo nhóm.",
-    "Ví dụ: Thành viên phát triển giao diện",
-  ],
   technologies: [
     "Chỉ liệt kê công nghệ bạn đã dùng trong dự án, mỗi dòng một công nghệ.",
     "Ví dụ:\nReact\nPostgreSQL",
   ],
-  contributions: [
-    "Bạn trực tiếp làm gì? Viết bằng động từ hành động và giữ đúng mức độ đóng góp.",
-    "Ví dụ: Hỗ trợ xây dựng giao diện danh sách công việc.",
-  ],
-  outcomes: [
-    "Dự án đã hoàn thành hoặc tạo ra kết quả gì? Không bắt buộc có số liệu.",
-    "Nêu sản phẩm, tính năng hoặc kết quả đã kiểm chứng",
-  ],
   project_url: [
     "Link demo, mã nguồn hoặc trang giới thiệu dự án, nếu có.",
     "https://…",
+  ],
+  github_url: [
+    "Link repository GitHub của riêng dự án này, nếu có.",
+    "https://github.com/ten-cua-ban/ten-du-an",
   ],
   group: [
     "Đặt tên nhóm để nhà tuyển dụng dễ đọc kỹ năng của bạn.",

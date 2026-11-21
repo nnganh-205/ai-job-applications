@@ -1,15 +1,17 @@
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../components/ui/Icon.jsx";
 import ProfileForm from "../profile/ProfileForm.jsx";
 import ProfileLivePreview from "./ProfileLivePreview.jsx";
+import FormTemplatePreview from "./FormTemplatePreview.jsx";
+import TemplatePicker from "./TemplatePicker.jsx";
 import {
   writingQuality,
   entryTitle,
   quickEditorialEdits,
 } from "./writingQuality.js";
 
-const groups = [
+const GROUPS = [
   [
     "contact",
     "Về bạn",
@@ -28,7 +30,7 @@ const groups = [
     "experience",
     "Kinh nghiệm",
     "briefcase",
-    "Kể rõ vai trò, công việc và đóng góp thực tế của bạn.",
+    "Kể rõ công việc bạn đã trực tiếp thực hiện.",
     "Mỗi dòng một ý. Giữ đúng mức độ đóng góp; chỉ thêm số liệu khi bạn có dữ liệu thật.",
   ],
   [
@@ -36,12 +38,12 @@ const groups = [
     "Dự án",
     "grid",
     "Thể hiện những gì bạn đã trực tiếp thực hiện.",
-    "Nêu mục tiêu, vai trò, công nghệ và kết quả. Dự án học phần cũng là kinh nghiệm hữu ích.",
+    "Nêu mục tiêu và công việc bạn trực tiếp thực hiện. Dự án học phần cũng là kinh nghiệm hữu ích.",
   ],
   [
     "skills",
     "Kỹ năng",
-    "spark",
+    "chat",
     "Những công cụ và kỹ năng bạn có thể sử dụng.",
     "Chia nhóm kỹ thuật và kỹ năng mềm. Mỗi dòng một kỹ năng, không thêm kỹ năng chỉ vì JD yêu cầu.",
   ],
@@ -61,16 +63,25 @@ const groups = [
   ],
 ];
 
+GROUPS.push(
+  ["certifications", "Chứng chỉ", "file", "", ""],
+  ["awards", "Danh hiệu và giải thưởng", "file", "", ""],
+  ["references", "Người giới thiệu", "user", "", ""],
+);
+
 const sectionOrder = [
   "contact",
+  "education",
   "experience",
   "project",
-  "education",
   "involvement",
   "skills",
+  "certifications",
+  "awards",
+  "references",
   "summary",
 ];
-groups.sort((a, b) => sectionOrder.indexOf(a[0]) - sectionOrder.indexOf(b[0]));
+GROUPS.sort((a, b) => sectionOrder.indexOf(a[0]) - sectionOrder.indexOf(b[0]));
 
 export default function ResumeFormBuilder({
   profile,
@@ -80,7 +91,6 @@ export default function ResumeFormBuilder({
   busy,
   confirmed,
   dirty,
-  version,
   error,
   message,
   refine,
@@ -88,9 +98,23 @@ export default function ResumeFormBuilder({
   onSave,
   onPreview,
   onEdit,
+  profileUpdate = false,
   embedded = false,
   onClose,
+  template,
+  templates = [],
+  presentation,
+  onTemplateChange,
+  onPhotoUpload,
+  onPhotoRemove,
 }) {
+  const groups = template?.form_sections ? template.form_sections.map((key) => GROUPS.find((group) => group[0] === key)).filter(Boolean) : GROUPS;
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const templateDialog = useRef(null);
+  useEffect(() => {
+    if (templateOpen) templateDialog.current?.showModal();
+    return () => { if (templateDialog.current?.open) templateDialog.current.close(); };
+  }, [templateOpen]);
   const pageRef = useRef(null),
     toolbarRef = useRef(null);
   useLayoutEffect(() => {
@@ -111,8 +135,6 @@ export default function ResumeFormBuilder({
     measure();
     return () => observer.disconnect();
   }, []);
-  const [quick, setQuick] = useState([]),
-    [undo, setUndo] = useState([]);
   const [active, setActive] = useState(
     profile.experience.length
       ? "experience"
@@ -136,96 +158,55 @@ export default function ResumeFormBuilder({
   function select(section) {
     setActive(section);
     setWriterAction(null);
-    setQuick([]);
-    setUndo([]);
   }
   function add() {
-    setQuick([]);
-    setUndo([]);
     onChange({ ...profile, [active]: [...entries, {}] });
     setIndices({ ...indices, [active]: entries.length });
   }
   function remove() {
-    setQuick([]);
-    setUndo([]);
     onChange({ ...profile, [active]: entries.filter((_, i) => i !== index) });
     setIndices({ ...indices, [active]: Math.max(0, index - 1) });
   }
   function reorder(delta) {
-    setQuick([]);
-    setUndo([]);
     const next = [...entries];
     [next[index], next[index + delta]] = [next[index + delta], next[index]];
     onChange({ ...profile, [active]: next });
     setIndices({ ...indices, [active]: index + delta });
   }
   function optimize(check) {
-    const fixes = quickEditorialEdits(entry, check);
-    if (fixes.length) {
-      setQuick(fixes);
-      return;
-    }
-    setQuick([]);
     setWriterAction({
+      issue: check,
       style: check === "length" ? "concise" : "professional",
-      nonce: Date.now(),
+      edits: quickEditorialEdits(entry, check),
+      nonce: crypto.randomUUID(),
     });
-  }
-  function applyQuick(revert = false) {
-    const changes = revert ? undo : quick;
-    if (
-      !changes.length ||
-      changes.some(
-        (e) =>
-          JSON.stringify(entry[e.field]) !==
-          JSON.stringify(revert ? e.proposed : e.original),
-      )
-    ) {
-      setQuick([]);
-      setUndo([]);
-      return;
-    }
-    const next = { ...entry };
-    for (const e of changes) next[e.field] = revert ? e.original : e.proposed;
-    onChange({
-      ...profile,
-      [active]: entries.map((e, i) => (i === index ? next : e)),
-    });
-    setUndo(revert ? [] : changes);
-    setQuick([]);
   }
   return (
     <main
       ref={pageRef}
       className={
-        "resume-compose" + (embedded ? " resume-compose-embedded" : "")
+        "resume-compose" + (embedded ? " resume-compose-embedded" : "") + (profileUpdate ? " resume-compose-profile-update" : "")
       }
     >
+      {templateOpen && <dialog ref={templateDialog} className="template-expanded form-template-dialog" onCancel={() => setTemplateOpen(false)} aria-label="Đổi mẫu CV">
+        <div className="panel-heading"><h2>Chọn mẫu CV</h2><button type="button" autoFocus onClick={() => setTemplateOpen(false)}>Đóng</button></div>
+        <TemplatePicker items={templates} selected={template?.id} disabled={busy} onSelect={(item) => { onTemplateChange?.(item); setTemplateOpen(false); }} />
+      </dialog>}
       <header ref={toolbarRef} className="compose-toolbar">
         {embedded ? (
           <button className="compose-back" onClick={onClose} disabled={busy}>
             ← Bản CV
           </button>
         ) : (
-          <Link to="/workspace/resumes" className="compose-brand">
+          <Link to="/workspace" className="compose-brand">
             <span>
               <Icon name="file" size={22} />
             </span>
             <div>
-              CV của bạn<small>Không gian biên tập</small>
+              CV của bạn
             </div>
           </Link>
         )}
-        <span className="compose-save-state" role="status">
-          <i className={dirty ? "unsaved" : ""} />
-          {busy
-            ? "Đang xử lý…"
-            : confirmed
-              ? "Đã xác nhận"
-              : dirty
-                ? "Chưa lưu thay đổi"
-                : `Đã lưu · v${version}`}
-        </span>
         {confirmed ? (
           <button onClick={onEdit} disabled={busy}>
             Chỉnh sửa thông tin
@@ -235,6 +216,7 @@ export default function ResumeFormBuilder({
             <Icon name="check" size={14} /> Lưu nháp
           </button>
         )}
+        {onTemplateChange && <button type="button" disabled={busy} onClick={() => setTemplateOpen(true)}>{template?.name || "Chọn mẫu CV"} · Đổi mẫu</button>}
         <button
           onClick={() => setShowPreview(!showPreview)}
           aria-pressed={showPreview}
@@ -247,7 +229,7 @@ export default function ResumeFormBuilder({
           onClick={onPreview}
           disabled={busy || !ready}
         >
-          {embedded ? "Hoàn tất chỉnh sửa" : "Hoàn tất & chọn mẫu"}{" "}
+          {embedded ? "Hoàn tất chỉnh sửa" : profileUpdate ? "Lưu hồ sơ & quay lại việc làm" : "Tạo CV theo mẫu đã chọn"}{" "}
           <Icon name="arrow" size={14} />
         </button>
       </header>
@@ -281,7 +263,7 @@ export default function ResumeFormBuilder({
           {message}
         </p>
       )}
-      <div className={"compose-layout" + (showPreview ? " with-preview" : "")}>
+      <div className={`compose-layout compose-layout-${active}${showPreview ? " with-preview" : ""}`}>
         <aside className="compose-sidebar">
           {narrative ? (
             <section className="compose-quality">
@@ -293,23 +275,12 @@ export default function ResumeFormBuilder({
               </div>
               <div>
                 <strong>Chất lượng câu chữ</strong>
-                <p>
-                  {!quality.lines.length
-                    ? "Bắt đầu bằng việc bạn đã làm"
-                    : quality.score === 100
-                      ? "Câu chữ rõ ràng, nhất quán"
-                      : "Còn những điểm có thể cải thiện"}
-                </p>
               </div>
-              <small>
-                Kiểm tra cách trình bày, không phải điểm phù hợp tuyển dụng.
-              </small>
             </section>
           ) : (
             <section className="compose-section-note">
               <Icon name={meta[2]} size={24} />
               <h2>{meta[1]}</h2>
-              <p>{meta[3]}</p>
             </section>
           )}
           <div className="compose-list-heading">
@@ -332,8 +303,6 @@ export default function ResumeFormBuilder({
                 onClick={() => {
                   setIndices({ ...indices, [active]: i });
                   setWriterAction(null);
-                  setQuick([]);
-                  setUndo([]);
                 }}
               >
                 <Icon name={meta[2]} size={15} />
@@ -374,61 +343,13 @@ export default function ResumeFormBuilder({
                   </span>
                   <div>
                     <strong>{check.label}</strong>
-                    {check.status === "warning" && (
-                      <small>
-                        Bullet {check.bad.join(", ")} · {check.help}
-                      </small>
-                    )}
                   </div>
                   <Icon name="arrow" size={12} />
                 </button>
               ))}
-              {quick.length > 0 && (
-                <div className="compose-quickfix">
-                  <strong>Đề xuất sửa nhanh</strong>
-                  {quick.map((edit) => (
-                    <div key={edit.field}>
-                      <small>Trước</small>
-                      <p>{edit.original.join("\n")}</p>
-                      <small>Đề xuất</small>
-                      <p>{edit.proposed.join("\n")}</p>
-                    </div>
-                  ))}
-                  <button disabled={disabled} onClick={() => applyQuick()}>
-                    Áp dụng gợi ý
-                  </button>
-                  <button onClick={() => setQuick([])}>Giữ nguyên</button>
-                </div>
-              )}
-              {undo.length > 0 && (
-                <button
-                  className="compose-undo"
-                  disabled={disabled}
-                  onClick={() => applyQuick(true)}
-                >
-                  ↶ Hoàn tác sửa nhanh
-                </button>
-              )}
-              <details>
-                <summary>
-                  {quality.passed}/{quality.total} tiêu chí trình bày đạt
-                </summary>
-                <p>
-                  Chỉ mô tả phần bạn thực sự làm. Có thể bổ sung kết quả định
-                  tính; số liệu chỉ dùng khi bạn đã có dữ liệu thật.
-                </p>
-              </details>
-              <div className="compose-metric-note">
-                <Icon name="spark" size={15} />
-                <p>
-                  {quality.hasMetric
-                    ? "Đã có thông tin định lượng. Kiểm tra lại số liệu trước khi dùng."
-                    : "Có kết quả thực tế? Bạn có thể bổ sung để bullet rõ hơn. Không bắt buộc thêm số liệu."}
-                </p>
-              </div>
+              <p className="compose-check-count">{quality.passed}/{quality.total} tiêu chí trình bày đạt</p>
             </section>
           )}
-          <p className="compose-help">{meta[4]}</p>
         </aside>
         <section
           className="compose-editor"
@@ -436,25 +357,9 @@ export default function ResumeFormBuilder({
         >
           <header className="compose-editor-heading">
             <div>
-              <p className="eyebrow">
-                {narrative
-                  ? "KINH NGHIỆM CỦA BẠN, BẰNG LỜI CỦA BẠN"
-                  : "THÔNG TIN CV"}
-              </p>
               <h1>
                 {entries.length ? entryTitle(entry, active, index) : meta[1]}
               </h1>
-              <p>
-                {entries.length
-                  ? [
-                      entry.company || entry.role || entry.major,
-                      entry.start_date,
-                      entry.end_date,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")
-                  : meta[3]}
-              </p>
             </div>
             {entries.length > 0 && (
               <div className="compose-entry-tools">
@@ -499,12 +404,19 @@ export default function ResumeFormBuilder({
               </button>
             </div>
           ) : (
+            <>
+            {active === "contact" && template?.has_photo && onPhotoUpload && <section className="form-avatar-picker">
+              <img src={presentation?.photo_asset_id ? `/api/assets/${presentation.photo_asset_id}` : "/templates/avatar-placeholder.svg"} alt="Ảnh đại diện CV" />
+              <label>Ảnh đại diện<input type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) onPhotoUpload(file); }} /></label>
+              {presentation?.photo_asset_id && <button type="button" disabled={disabled} onClick={onPhotoRemove}>Bỏ ảnh</button>}
+            </section>}
             <ProfileForm
               key={active + "-" + index}
               profile={profile}
               initialProfile={initialProfile}
               schema={schema}
               section={active}
+              allowedFields={active === "contact" ? template?.contact_fields : template?.entry_fields?.[active]}
               onChange={onChange}
               disabled={disabled}
               compact
@@ -513,12 +425,9 @@ export default function ResumeFormBuilder({
               hideAdd
               writerAction={writerAction}
             />
+            </>
           )}
           <footer className="compose-editor-footer">
-            <small>
-              <Icon name="check" size={14} /> Bạn luôn xem lại đề xuất trước khi
-              áp dụng.
-            </small>
             <div>
               <button
                 disabled={groups.findIndex((g) => g[0] === active) === 0}
@@ -530,13 +439,14 @@ export default function ResumeFormBuilder({
               >
                 ← Phần trước
               </button>
+              {active === "summary" && onTemplateChange && <button type="button" onClick={() => setTemplateOpen(true)} disabled={busy}>Đổi mẫu CV</button>}
               {active === "summary" ? (
                 <button
                   className="compose-finish"
                   disabled={busy || !ready}
                   onClick={onPreview}
                 >
-                  {embedded ? "Hoàn tất chỉnh sửa →" : "Chọn mẫu CV →"}
+                  {embedded ? "Hoàn tất chỉnh sửa →" : "Tạo CV →"}
                 </button>
               ) : (
                 <button
@@ -566,14 +476,12 @@ export default function ResumeFormBuilder({
         {showPreview && (
           <aside className="compose-preview">
             <div>
-              <strong>Bản xem trước nội dung</strong>
+              <strong>Bản xem trước CV</strong>
               <span>
-                {embedded
-                  ? "Thiết kế CV hiện tại được giữ nguyên"
-                  : "Chọn mẫu ở bước hoàn tất"}
+                {template?.name || "Thiết kế CV hiện tại"}
               </span>
             </div>
-            <ProfileLivePreview profile={profile} />
+            {template && presentation ? <FormTemplatePreview profile={profile} presentation={presentation} template={template} /> : <ProfileLivePreview profile={profile} />}
           </aside>
         )}
       </div>

@@ -40,11 +40,11 @@ export function HeroRail() {
       </div>
       <div className="zen-rail-strip">
         <span>Thông tin của bạn</span>
-        <span>✦</span>
+
         <span>Câu chuyện của bạn</span>
-        <span>✦</span>
+
         <span>Cơ hội tiếp theo</span>
-        <span>✦</span>
+
       </div>
     </div>
   );

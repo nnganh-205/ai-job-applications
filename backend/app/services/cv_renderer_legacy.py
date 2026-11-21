@@ -42,7 +42,8 @@ def render_html(document: CVDocument, template='ats', presentation=None) -> str:
     from backend.app.schemas.resume import Presentation
     options=Presentation.model_validate(presentation or {'template':template,'template_version':1})
     css += f" body{{font-size:{options.font_size}pt;line-height:{options.line_height};font-family:CVFont,{'serif' if options.font=='serif' else 'sans-serif'}}} h2{{color:{options.color}}}"
-    return f'<!doctype html><html lang="{document.language}"><head><meta charset="utf-8"><style>{css}</style></head><body>{body}</body></html>'
+    from backend.app.services.project_headers import decorate_projects
+    return decorate_projects(f'<!doctype html><html lang="{document.language}"><head><meta charset="utf-8"><style>{css}</style></head><body>{body}</body></html>',document)
 
 
 def render_pdf(document: CVDocument, template='ats', presentation=None) -> bytes:

@@ -8,7 +8,7 @@ from backend.app.schemas.cv import CVDocument
 
 class Presentation(StrictModel):
     template: TemplateID = 'ats'
-    template_version: Literal[1,2] = 2
+    template_version: Literal[1,2,3] = 2
     color: str = Field(default='#2457d6',pattern=r'^#[a-fA-F0-9]{6}$')
     photo_asset_id: str | None = Field(default=None,pattern=r'^asset_[a-f0-9]{64}$')
     font: Literal['sans','serif'] = 'sans'

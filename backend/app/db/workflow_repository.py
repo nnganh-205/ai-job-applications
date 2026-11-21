@@ -4,6 +4,7 @@ import hashlib
 import os
 import re
 from pathlib import Path
+from backend.app.core.workspace import storage_path
 
 from backend.app.core.config import PROJECT_ROOT
 from backend.app.db import database
@@ -22,7 +23,7 @@ def get(kind: str, key: str):
     key = safe_key(key)
     if database.enabled():
         return database.get_record(kind, key)
-    path = DEFAULT_WORKFLOW_STORAGE / kind / f"{key}.json"
+    path = storage_path(DEFAULT_WORKFLOW_STORAGE) / kind / f"{key}.json"
     if not path.exists():
         return None
     import json
@@ -33,7 +34,7 @@ def put(kind: str, key: str, data: dict):
     key = safe_key(key)
     if database.enabled():
         return database.put_record(kind, key, data)
-    atomic_json(DEFAULT_WORKFLOW_STORAGE / kind / f"{key}.json", data)
+    atomic_json(storage_path(DEFAULT_WORKFLOW_STORAGE) / kind / f"{key}.json", data)
     return data
 
 
@@ -56,4 +57,14 @@ def list_kind(kind: str) -> list[dict]:
     if database.enabled():
         return [row['data'] for row in database.list_records(kind)]
     import json
-    return [json.loads(path.read_text(encoding='utf-8')) for path in (DEFAULT_WORKFLOW_STORAGE / kind).glob('*.json')]
+    return [json.loads(path.read_text(encoding='utf-8')) for path in (storage_path(DEFAULT_WORKFLOW_STORAGE) / kind).glob('*.json')]
+
+
+def delete(kind, key):
+    key = safe_key(key)
+    if database.enabled():
+        from backend.app.core.workspace import record_kind
+        with database.connect() as c:
+            c.execute("DELETE FROM kltn_app.records WHERE kind=%s AND record_id=%s", (record_kind(kind), key))
+    else:
+        (storage_path(DEFAULT_WORKFLOW_STORAGE) / kind / f"{key}.json").unlink(missing_ok=True)

@@ -12,6 +12,6 @@ export default function JobCard({ job, selected, onSelect, onSave }) {
     </button><button className="save-job" aria-label={job.saved ? `Bỏ lưu ${job.title}` : `Lưu ${job.title}`} aria-pressed={job.saved} onClick={onSave}><Icon name="bookmark" size={18}/></button></div>
     <div className="job-card-meta"><span className="salary">{formatSalary(job)}</span><span><Icon name="pin" size={14}/>{job.location || 'Chưa công bố địa điểm'}</span><span>{employmentLabel(job.employment_type)}</span>{job.workplace_type&&<span>{job.workplace_type}</span>}</div>
     {job.skills?.length > 0 && <div className="pills skills">{job.skills.slice(0,4).map(skill=><span key={skill}>{skill}</span>)}</div>}
-    <div className="card-footer"><div><span className="job-source-badge">{job.source_name}</span>{job.expiry_conflict && <span className="expiry-note">Cần kiểm tra hạn tuyển</span>}</div><span className="source-line" title={job.import_method==='text'?'Nội dung người dùng nhập, chưa xác minh nguồn':sourceTime(job.fetched_at)}>{job.import_method==='text'?'JD đã nhập':job.fetched_at?'Lấy tin '+new Date(job.fetched_at).toLocaleDateString('vi-VN'):'Bản tin đã lưu'}</span></div>
+    <div className="card-footer"><span className="job-source-badge">{job.source_name}</span></div>
   </article>;
 }

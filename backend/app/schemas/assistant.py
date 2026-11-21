@@ -3,7 +3,7 @@ from typing import Literal
 from pydantic import Field, model_validator
 from backend.app.schemas.profile import StrictModel
 
-Intent = Literal['review_cv','tailor_cv','evaluate','update_profile','find_jobs','clarify','advice','build_cv','prepare_cv']
+Intent = Literal['review_cv','tailor_cv','evaluate','update_profile','find_jobs','clarify','advice','build_cv','prepare_cv','labor_law']
 
 
 class AssistantStart(StrictModel):

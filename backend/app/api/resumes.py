@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter,Path,HTTPException
+from fastapi import APIRouter,Path,Query,HTTPException
 from fastapi.responses import HTMLResponse
 from backend.app.services import resumes, resume_editing
 from backend.app.schemas.resume import ResumeStart,ResumeSave,ResumePublish,ResumeEditStart,ResumeEditComplete
@@ -40,6 +40,11 @@ def read(key:ResumeID):return checked(resumes.read,key)
 
 @router.put('/{key}')
 def save(key:ResumeID,request:ResumeSave):return checked(resumes.save,key,request)
+
+
+@router.delete('/{key}')
+def delete(key: ResumeID, expected_version: Annotated[int, Query(ge=1)]):
+    return checked(resumes.delete, key, expected_version)
 
 
 @router.post('/{key}/publish')

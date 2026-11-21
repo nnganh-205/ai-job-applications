@@ -1,4 +1,5 @@
 from io import BytesIO
+import re
 from pathlib import Path
 from zipfile import ZipFile
 from urllib.parse import urlsplit
@@ -45,6 +46,38 @@ def validate_cv_file(filename: str, file_bytes: bytes) -> str:
     return extension
 
 
+def _reading_order(blocks, width, height):
+    blocks = [block for block in blocks if block[4].strip() and (len(block) < 7 or block[6] == 0)]
+    headers = [b for b in blocks if b[2] - b[0] > width * .55 and b[3] < height * .22]
+    footers = [b for b in blocks if b[1] > height * .94 and b[3] - b[1] < 30
+               and re.search(r'©|copyright|^(?:page|trang)\s+\d|^\s*\d+\s*(?:/|of)\s*\d+\s*$', b[4], re.I)]
+    body = [b for b in blocks if b not in headers and b not in footers]
+    intervals = []
+    for block in sorted(body, key=lambda b: b[0]):
+        if intervals and block[0] <= intervals[-1][1]:
+            intervals[-1][1] = max(intervals[-1][1], block[2])
+        else:
+            intervals.append([block[0], block[2]])
+    cuts = []
+    for left, right in zip(intervals, intervals[1:]):
+        if right[0] - left[1] < max(12, width * .02):
+            continue
+        cut = (left[1] + right[0]) / 2
+        before = [b for b in body if b[2] < cut]
+        after = [b for b in body if b[0] > cut]
+        if len(before) >= 3 and len(after) >= 3:
+            overlap = min(max(b[3] for b in before), max(b[3] for b in after)) - max(min(b[1] for b in before), min(b[1] for b in after))
+            if overlap >= height * .15:
+                cuts.append(cut)
+    if not cuts:
+        return sorted(blocks, key=lambda b: (b[1], b[0]))
+    columns = [[] for _ in range(len(cuts) + 1)]
+    for block in body:
+        columns[sum(block[0] > cut for cut in cuts)].append(block)
+    order = lambda values: sorted(values, key=lambda b: (b[1], b[0]))
+    return order(headers) + [b for column in columns for b in order(column)] + order(footers)
+
+
 def read_pdf(file_bytes: bytes) -> str:
     try:
         with pymupdf.open(stream=file_bytes, filetype="pdf") as document:
@@ -52,8 +85,8 @@ def read_pdf(file_bytes: bytes) -> str:
                 raise DocumentReadError("PDF có mật khẩu; cần bỏ mật khẩu trước khi upload")
             pages = []
             for page in document:
-                # Best-effort block order; not a guarantee for arbitrary multi-column layouts.
-                blocks = sorted(page.get_text("blocks"), key=lambda block: (block[1], block[0]))
+                textpage = page.get_textpage()
+                blocks = _reading_order(page.get_text("blocks", textpage=textpage), page.rect.width, page.rect.height)
                 links = page.get_links()
                 lines = []
                 for block in blocks:
@@ -64,9 +97,9 @@ def read_pdf(file_bytes: bytes) -> str:
                     for link in links:
                         uri = link.get("uri", "")
                         if uri and _safe_link(uri) and pymupdf.Rect(block[:4]).intersects(link["from"]) and uri not in text:
-                            label = page.get_textbox(link["from"]).strip().replace("\n", " ")
+                            label = page.get_textbox(link["from"], textpage=textpage).strip().replace("\n", " ")
                             lines.append(f"{label}: {uri}" if label else uri)
-                pages.append("\n".join(lines))
+                pages.append("\n\n".join(lines))
     except DocumentReadError:
         raise
     except Exception as error:

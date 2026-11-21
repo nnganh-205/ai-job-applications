@@ -82,6 +82,5 @@ def history(profile_id: str) -> list[dict]:
         with database.connect() as connection:
             rows = connection.execute("SELECT revision_id AS profile_id,root_id AS root_profile_id,parent_id AS parent_profile_id,session_id,created_at,changed_paths FROM kltn_app.profile_revisions WHERE root_id=%s ORDER BY created_at", (root,)).fetchall()
         return [{**row, "created_at": row["created_at"].isoformat()} for row in rows]
-    import json
-    rows = [json.loads(path.read_text()) for path in (records.DEFAULT_WORKFLOW_STORAGE / "revisions").glob("*.json")]
+    rows = records.list_kind('revisions')
     return sorted([row for row in rows if row["root_profile_id"] == root], key=lambda row: row["created_at"])

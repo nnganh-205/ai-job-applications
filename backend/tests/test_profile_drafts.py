@@ -31,6 +31,31 @@ class ProfileDraftTests(unittest.TestCase):
         self.assertEqual(drafts.read(draft['draft_id']),draft)
         self.assertEqual(profile_repository.list_profile_records(),[])
 
+    def test_import_opens_editable_form_without_confirming_profile(self):
+        profile = MasterProfile(contact={'full_name': 'Imported Candidate'}, experience=[],
+                                project=[], education=[], involvement=[], skills=[])
+        state = dict(status='pending_confirmation', profile=profile.model_dump(mode='json'),
+                     resume_text='Imported Candidate', filename='candidate.pdf',
+                     warnings=['Check dates'], evidence=[])
+        draft = drafts.from_extraction('import_thread', state)
+        self.assertEqual(draft['status'], 'editing')
+        self.assertEqual(draft['warnings'], ['Check dates'])
+        self.assertEqual(profile_repository.list_profile_records(), [])
+        edited = self.save(draft, 'Edited Candidate')
+        # Retrying the handoff must reopen the edited draft, never reset it.
+        self.assertEqual(drafts.from_extraction('import_thread', state), edited)
+        confirmed = self.confirm(edited)
+        record = profile_repository.load_profile_record(confirmed['confirmed_profile_id'], profile_repository.DEFAULT_STORAGE_DIR)
+        self.assertEqual(record.profile.contact.full_name, 'Edited Candidate')
+        self.assertEqual(record.source_text, 'Imported Candidate')
+        self.assertEqual(record.source_filename, 'candidate.pdf')
+        self.assertTrue(any(e.origin == 'user_confirmation' for e in record.evidence))
+
+    def test_incomplete_import_cannot_open_form(self):
+        for state in ({}, {'status': 'confirmed'}, {'status': 'parsing'}):
+            with self.subTest(state=state), self.assertRaises(LookupError):
+                drafts.from_extraction('missing', state)
+
     def test_publish_is_idempotent_and_immutable(self):
         draft=self.save(drafts.start(),'Original')
         result=self.confirm(draft)

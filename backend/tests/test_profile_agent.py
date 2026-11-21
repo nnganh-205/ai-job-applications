@@ -198,15 +198,22 @@ class ProfileSchemaTests(unittest.TestCase):
         self.assertEqual(result.experience[0].job_title, "Backend Developer")
         mock_extract.assert_not_called()
 
+    @patch("ai.agents.profile_agent.extract_missing_job_titles")
+    def test_missing_source_entry_does_not_trigger_unusable_inference(self, mock_extract):
+        profile = empty_profile(experience=[{"company": "Unknown Company"}])
+        result = fill_missing_job_titles(profile, "Skills: Python")
+        self.assertIsNone(result.experience[0].job_title)
+        mock_extract.assert_not_called()
+
 
 class OllamaTests(unittest.TestCase):
-    @patch("ai.llm.ollama_client.httpx.post")
+    @patch("ai.llm.ollama_client._client.post")
     def test_ollama_not_running(self, mock_post):
         mock_post.side_effect = httpx.ConnectError("connection refused")
         with self.assertRaisesRegex(OllamaError, "Không kết nối"):
             request_profile("Resume text")
 
-    @patch("ai.llm.ollama_client.httpx.post")
+    @patch("ai.llm.ollama_client._client.post")
     def test_ollama_timeout_has_correct_message(self, mock_post):
         mock_post.side_effect = httpx.ReadTimeout("timed out")
         with self.assertRaisesRegex(OllamaError, "quá 600 giây"):

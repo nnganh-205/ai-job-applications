@@ -1,3 +1,4 @@
+from backend.app.core.workspace import storage_path
 import json
 from contextlib import nullcontext
 import re
@@ -23,7 +24,7 @@ def _safe_thread_id(thread_id: str) -> str:
 def save_master_profile(
     thread_id: str,
     profile: MasterProfile,
-    storage_dir: Path = DEFAULT_STORAGE_DIR,
+    storage_dir: Path | None = None,
     *,
     evidence: Sequence[dict | SourceEvidence] = (),
     warnings: Sequence[str] = (),
@@ -33,13 +34,14 @@ def save_master_profile(
     parent_profile_id: str | None = None,
     connection=None,
 ) -> None:
+    storage_dir = storage_path(storage_dir or DEFAULT_STORAGE_DIR)
     safe_id = _safe_thread_id(thread_id)
     record = StoredProfile(profile=profile, evidence=list(evidence), warnings=list(warnings), source_text=source_text, source_filename=source_filename,
                            root_profile_id=root_profile_id, parent_profile_id=parent_profile_id)
     if database.enabled():
         with (nullcontext(connection) if connection is not None else database.connect()) as connection, connection.transaction():
             connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (safe_id,))
-            if connection.execute("SELECT 1 FROM kltn_app.records WHERE kind='profiles' AND record_id=%s", (safe_id,)).fetchone():
+            if database.get_record("profiles", safe_id, connection=connection):
                 raise ValueError("Profile đã tồn tại; không ghi đè hồ sơ đã xác nhận")
             database.put_record("profiles", safe_id, record.model_dump(mode="json"), immutable=True, connection=connection)
             connection.execute("INSERT INTO kltn_app.profile_heads(root_id,revision_id) VALUES (%s,%s) ON CONFLICT DO NOTHING", (root_profile_id or safe_id, safe_id))
@@ -64,7 +66,8 @@ def save_master_profile(
             temporary_path.unlink(missing_ok=True)
 
 
-def load_profile_record(thread_id: str, storage_dir: Path = DEFAULT_STORAGE_DIR) -> StoredProfile | None:
+def load_profile_record(thread_id: str, storage_dir: Path | None = None) -> StoredProfile | None:
+    storage_dir = storage_path(storage_dir or DEFAULT_STORAGE_DIR)
     if database.enabled():
         data = database.get_record("profiles", _safe_thread_id(thread_id))
         return StoredProfile.model_validate(data) if data is not None else None
@@ -82,7 +85,7 @@ def list_profile_records() -> list[tuple[str, StoredProfile]]:
     if database.enabled():
         return [(item["id"], StoredProfile.model_validate(item["data"])) for item in database.list_records("profiles")]
     records = {}
-    for path in sorted(DEFAULT_STORAGE_DIR.glob("*.json"), key=lambda item: item.stat().st_mtime):
+    for path in sorted(storage_path(DEFAULT_STORAGE_DIR).glob("*.json"), key=lambda item: item.stat().st_mtime):
         try:
             record = load_profile_record(path.stem, DEFAULT_STORAGE_DIR)
             if record:
@@ -97,7 +100,7 @@ def list_profile_records() -> list[tuple[str, StoredProfile]]:
 
 def load_master_profile(
     thread_id: str,
-    storage_dir: Path = DEFAULT_STORAGE_DIR,
+    storage_dir: Path | None = None,
 ) -> MasterProfile | None:
     record = load_profile_record(thread_id, storage_dir)
     return record.profile if record else None

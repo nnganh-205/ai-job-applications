@@ -10,6 +10,22 @@ from backend.app.schemas.resume import ResumeSave,Presentation
 from backend.app.db.profile_revision_repository import RevisionConflict
 
 class WriterTests(unittest.TestCase):
+    def test_context_matching_work_text_does_not_hide_actual_work(self):
+        from backend.app.services.cv_writer import facts_for
+        request = WriterRequest(entry={'project_name': 'Kiểm thử giao diện'}, text='Kiểm thử giao diện', field='description')
+        self.assertEqual([f['kind'] for f in facts_for(request)], ['context', 'work'])
+        self.assertNotEqual(write_bullets(request, use_model=False)['status'], 'needs_input')
+
+    def test_output_schema_only_allows_provided_evidence_and_requested_count(self):
+        from backend.app.services.cv_writer import facts_for, writer_plan_schema
+        from pydantic import ValidationError
+        facts = facts_for(WriterRequest(entry={'project_name': 'Blog'}, text='Built a Python API.', field='description'))
+        schema = writer_plan_schema(facts, 1)
+        valid = {'text': 'Developed a Python API.', 'source_ids': ['f1']}
+        schema.model_validate({'bullets': [valid]})
+        for bullets in ([{**valid, 'source_ids': ['invented']}], [{**valid, 'source_ids': ['f0']}], [valid, valid]):
+            with self.subTest(bullets=bullets), self.assertRaises(ValidationError):
+                schema.model_validate({'bullets': bullets})
     def test_title_alone_needs_tasks_not_stereotypical_bullets(self):
         r=write_bullets(WriterRequest(entry={'job_title':'AI Engineer','company':'Demo'}),use_model=False)
         self.assertEqual(r['status'],'needs_input');self.assertEqual(r['bullets'],[])
@@ -53,6 +69,27 @@ class WriterTests(unittest.TestCase):
 class EditorWriterTests(unittest.TestCase):
     setUp=ResumeTests.setUp
     create=ResumeTests.create
+
+    def test_non_adjacent_suggestions_keep_original_order_even_if_selected_backwards(self):
+        from backend.app.db import profile_repository as profiles
+        from backend.app.schemas.profile import MasterProfile
+        from backend.app.schemas.resume import ResumeStart
+        lines = ['Built Python API with 20 endpoints.', 'Maintained PostgreSQL database.', 'Built a Python API.']
+        profile = MasterProfile(contact={}, experience=[], education=[], involvement=[], skills=[],
+                                project=[dict(id='p1', project_name='Fixture', description=lines)])
+        profiles.save_master_profile('orderfixture', profile, profiles.DEFAULT_STORAGE_DIR)
+        draft = resumes.start(ResumeStart(profile_id='orderfixture'))
+        entry = draft['document']['sections'][0]['entries'][0]
+        bullets = [dict(text='Developed Python API with 20 endpoints.', sources=[lines[0]], source_ids=['f0']),
+                   dict(text='Developed a Python API.', sources=[lines[2]], source_ids=['f2'])]
+        with patch('backend.app.services.resume_writer.write_bullets', return_value=dict(bullets=bullets)):
+            proposal = resume_writer.preview(draft['resume_id'], resume_writer.ResumeWriterRequest(
+                expected_version=1, section='project', entry_id=entry['source_entry_id']))
+        updated = resume_writer.apply(draft['resume_id'], resume_writer.ResumeWriterApply(
+            expected_version=1, proposal_id=proposal['proposal_id'], selected=[1, 0]))
+        actual = updated['document']['sections'][0]['entries'][0]['bullets']
+        self.assertEqual([b['text'] for b in actual], [bullets[0]['text'], lines[1], bullets[1]['text']])
+        self.assertEqual(actual[1], entry['bullets'][1])
 
     def proposal(self,d):
         e=d['document']['sections'][0]['entries'][0]

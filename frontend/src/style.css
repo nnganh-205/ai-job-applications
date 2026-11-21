@@ -18,3 +18,5 @@
 @import "./styles/navigation.css";
 
 @import "./styles/aurora.css";
+@import "./styles/auth.css";
+@import "./styles/admin.css";

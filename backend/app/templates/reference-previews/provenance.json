@@ -1,0 +1,8 @@
+{
+  "usage": "Fictional demonstration profile for template previews; not used for training",
+  "personal_data": false,
+  "contact_domains": [
+    "example.com",
+    "example.org"
+  ]
+}

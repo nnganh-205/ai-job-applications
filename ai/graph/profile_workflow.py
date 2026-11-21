@@ -1,3 +1,4 @@
+from backend.app.core.workspace import graph_config
 from typing import TypedDict
 
 from backend.app.db.checkpoints import get_checkpointer
@@ -28,7 +29,8 @@ class ProfileState(TypedDict, total=False):
 
 
 def parse_cv_node(state: ProfileState) -> ProfileState:
-    return {"resume_text": read_cv(state["filename"], state["file_bytes"])}
+    text = state.get('resume_text')
+    return {"resume_text": text if text is not None else read_cv(state["filename"], state["file_bytes"]), "file_bytes": b''}
 
 
 def extract_profile_node(state: ProfileState) -> ProfileState:
@@ -82,14 +84,14 @@ profile_graph = build_profile_graph()
 
 
 def start_extraction(filename: str, file_bytes: bytes, thread_id: str) -> ProfileState:
-    config = {"configurable": {"thread_id": thread_id}}
-    state = {"filename": filename, "file_bytes": file_bytes, "thread_id": thread_id}
+    config = graph_config(thread_id)
+    state = {"filename": filename, "resume_text": read_cv(filename, file_bytes), "thread_id": thread_id}
     profile_graph.invoke(state, config=config)
     return profile_graph.get_state(config).values
 
 
 def confirm_extraction(thread_id: str, profile: MasterProfile) -> ProfileState:
-    config = {"configurable": {"thread_id": thread_id}}
+    config = graph_config(thread_id)
     current_state = profile_graph.get_state(config).values
     if not current_state or current_state.get("status") != "pending_confirmation":
         raise ValueError("Không tìm thấy phiên trích xuất đang chờ xác nhận")

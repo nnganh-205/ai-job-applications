@@ -1,23 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Icon from "../../components/ui/Icon.jsx";
 import PageHeading from "../../components/ui/PageHeading.jsx";
 import CVPreviewFrame from "../../components/ui/CVPreviewFrame.jsx";
 import { EmptyState } from "../../components/ui/PageState.jsx";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
+import { extractCVToForm } from "../../lib/profileImport.js";
 export const send = (path, body, method = "POST") =>
   request(path, {
     method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-export default function ResumeLibrary() {
+export default function ResumeLibrary({ embedded = false }) {
   const [items, setItems] = useState(null),
     [profiles, setProfiles] = useState([]),
     [selected, setSelected] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const uploadInput = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState("");
   const [params] = useSearchParams();
   const template = params.get("template") || "classic";
   useEffect(() => {
@@ -37,26 +41,55 @@ export default function ResumeLibrary() {
       });
     return () => c.abort();
   }, []);
-  async function create() {
-    setBusy(true);
+  function create() {
+    const next = new URLSearchParams();
+    if (selected) next.set("profile", selected);
+    navigate("/workspace/resumes/new" + (next.size ? "?" + next.toString() : ""));
+  }
+
+  async function deleteResume(resume) {
+    if (deleting || !window.confirm(`Xoá CV “${resume.title}”? Bản nháp, lịch sử chỉnh sửa và các bản PDF của CV này sẽ bị xoá. Không thể hoàn tác.`)) return;
+    setDeleting(resume.resume_id);
     setError("");
     try {
-      const d = await send("/api/profile-drafts", {
-        base_profile_id: selected || null,
-      });
-      navigate(
-        `/workspace/resumes/new/${d.draft_id}?resumeTemplate=${encodeURIComponent(template)}`,
-      );
-    } catch (e) {
-      setError(e.message);
+      await request(`/api/resumes/${encodeURIComponent(resume.resume_id)}?expected_version=${resume.version}`, { method: "DELETE" });
+      setItems((current) => current.filter((item) => item.resume_id !== resume.resume_id));
+    } catch (error) {
+      setError(error.message);
     } finally {
-      setBusy(false);
+      setDeleting("");
     }
   }
 
+  async function importCV(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!/\.(pdf|docx)$/i.test(file.name) || file.size > 5 * 1024 * 1024) {
+      setError("Vui lòng chọn tệp PDF hoặc DOCX, tối đa 5 MB.");
+      return;
+    }
+    setUploading(true);
+    setError("");
+    try {
+      const draft = await extractCVToForm(file);
+      navigate(`/workspace/resumes/new?draft=${encodeURIComponent(draft.draft_id)}`);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const Container = embedded ? "section" : "main";
   return (
-    <main className="resume-library">
-      <PageHeading
+    <Container className="resume-library">
+      {embedded ? (
+        <div className="library-section-heading">
+          <h2>CV của tôi</h2>
+          <Link to="/templates"><Icon name="grid" size={16} /> Khám phá mẫu CV</Link>
+        </div>
+      ) : <PageHeading
         eyebrow="THƯ VIỆN CÁ NHÂN"
         title="Thư viện CV của bạn"
         action={
@@ -67,13 +100,12 @@ export default function ResumeLibrary() {
       >
         Tạo CV bằng form hoặc trò chuyện với AI. Mọi bản nháp và thiết kế của
         bạn đều ở đây.
-      </PageHeading>
+      </PageHeading>}
       <div className="resume-create-methods">
         <section className="resume-method-card method-form">
           <span className="resume-method-icon">
             <Icon name="edit" size={25} />
           </span>
-          <p className="resume-method-kicker">TỪNG MỤC RÕ RÀNG</p>
           <h2>Điền form tạo CV</h2>
           <p>
             Nhập thông tin theo từng phần, có hướng dẫn và ví dụ. AI giúp câu
@@ -100,15 +132,14 @@ export default function ResumeLibrary() {
             </select>
           </label>
           <button disabled={busy} onClick={create}>
-            {busy ? "Đang mở form…" : "Bắt đầu điền form"}
+            {busy ? "Đang mở form…" : "Chọn mẫu & điền form"}
             <Icon name="arrow" size={16} />
           </button>
         </section>
         <section className="resume-method-card method-chat">
           <span className="resume-method-icon">
-            <Icon name="spark" size={25} />
+            <Icon name="chat" size={25} />
           </span>
-          <p className="resume-method-kicker">BẮT ĐẦU BẰNG CÂU CHUYỆN</p>
           <h2>Chat tạo CV với AI</h2>
           <p>
             Kể về học vấn, kinh nghiệm và dự án của bạn. AI sắp xếp thông tin
@@ -138,17 +169,18 @@ export default function ResumeLibrary() {
         <span>
           Đã có CV? Tải lên để điền sẵn thông tin và tiếp tục chỉnh sửa.
         </span>
-        <Link
-          to={`/workspace/import?resumeTemplate=${encodeURIComponent(template)}`}
-        >
-          Tải CV lên
+        <input ref={uploadInput} type="file" accept=".pdf,.docx" hidden
+          aria-label="Chọn CV để tải lên" disabled={uploading} onChange={importCV} />
+        <button type="button" disabled={uploading} onClick={() => uploadInput.current?.click()}>
+          {uploading ? "Đang tách thông tin CV…" : "Tải CV lên"}
           <Icon name="arrow" size={14} />
-        </Link>
+        </button>
+        {uploading && <span role="status">Vui lòng chờ, form sẽ mở khi xử lý xong.</span>}
       </div>
       <div className="library-section-heading">
         <h2>Tất cả CV {items && <span>{items.length}</span>}</h2>
         <Link to="/workspace/assistant">
-          <Icon name="spark" size={15} /> Nhờ AI rà soát CV
+          <Icon name="chat" size={15} /> Nhờ AI rà soát CV
         </Link>
       </div>
       {error && (
@@ -226,11 +258,16 @@ export default function ResumeLibrary() {
                     {r.published_version ? ` · v${r.published_version}` : ""}
                   </a>
                 )}
+                <button type="button" className="resume-delete-button" disabled={!!deleting}
+                  aria-label={"Xoá CV " + r.title} onClick={() => deleteResume(r)}>
+                  <Icon name="trash" size={15} />
+                  {deleting === r.resume_id ? "Đang xoá…" : "Xoá"}
+                </button>
               </div>
             </div>
           </article>
         ))}
       </div>
-    </main>
+    </Container>
   );
 }

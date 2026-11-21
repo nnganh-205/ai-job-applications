@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {EmptyState} from "../../components/ui/PageState.jsx";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
 export default function EventsPage() {
   const [items, setItems] = useState(null),
     [error, setError] = useState("");

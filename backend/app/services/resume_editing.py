@@ -9,7 +9,7 @@ from backend.app.db.job_posting_repository import utc_now
 from backend.app.schemas.profile import MasterProfile, SourceEvidence
 from ai.agents.cv_agent import source_document, validate_edits
 
-KINDS = ('experience', 'project', 'education', 'involvement', 'skills')
+KINDS = ('experience', 'project', 'education', 'involvement', 'skills', 'certifications', 'awards', 'references')
 TEXT_FIELDS = ('description', 'responsibilities', 'achievements', 'objectives', 'contributions', 'outcomes', 'details', 'academic_achievements', 'relevant_coursework', 'original_bullets')
 
 
@@ -44,6 +44,8 @@ def editable_profile(data):
                 fallback = 'details' if kind == 'education' else 'description'
                 for bullet in current['bullets']:
                     fields = {ref.split('/')[3] for ref in bullet['source_refs'] if len(ref.split('/')) > 3}
+                    if kind=='project' and fields and fields.issubset({'technologies','github_url','project_url','demo_url'}):
+                        continue
                     field = next(iter(fields)) if len(fields) == 1 else fallback
                     if field not in TEXT_FIELDS or field not in entry:
                         # Scalars/tools/URLs already exist in the source metadata. Keep
@@ -140,9 +142,14 @@ def complete(key, request):
                         len(ref.split('/')) > 3 and ref.split('/')[3] in changed_fields for ref in b.source_refs)]
                 if old and initial.get(identity) == current.get(identity):
                     by_text = {b.text: b for b in entry.bullets}
-                    if any(b['text'] not in by_text for b in old['bullets']):
+                    tool_bullet = lambda b: bool(b['source_refs']) and all(len(ref.split('/')) > 3 and ref.split('/')[3] in {'technologies', 'technologies_used'} for ref in b['source_refs'])
+                    if any(b['text'] not in by_text and not tool_bullet(b) for b in old['bullets']):
                         raise ValueError('Có câu CV chưa ánh xạ được nguồn. Bản nháp được giữ để đối chiếu.')
-                    entry.bullets = [by_text[b['text']].model_copy(deep=True) for b in old['bullets']]
+                    visible_refs = {ref for b in old['bullets'] for ref in b['source_refs']}
+                    kept = [by_text[b['text']].model_copy(deep=True) for b in old['bullets'] if b['text'] in by_text]
+                    kept.extend(b for b in entry.bullets if b.text not in {item.text for item in kept}
+                                and tool_bullet(b.model_dump()) and set(b.source_refs).issubset(visible_refs))
+                    entry.bullets = kept
                     entry.title, entry.subtitle, entry.period = old['title'], old.get('subtitle'), old.get('period')
                     base_entry = next(e for s in baseline.sections if s.kind == section.kind for e in s.entries if e.source_entry_id == entry.source_entry_id)
                     base_entry.title, base_entry.subtitle, base_entry.period = entry.title, entry.subtitle, entry.period

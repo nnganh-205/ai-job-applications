@@ -4,7 +4,7 @@ from backend.app.services import profile_drafts as service
 from backend.app.schemas.profile import MasterProfile
 from backend.app.services.cv_polish import PolishRequest
 from backend.app.services.cv_writer import WriterRequest
-from backend.app.schemas.profile_draft import DraftStart, DraftSave, DraftConfirm
+from backend.app.schemas.profile_draft import DraftStart, DraftSave, DraftConfirm, DraftPreview
 from backend.app.db.profile_revision_repository import RevisionConflict
 from backend.app.db.profile_repository import list_profile_records
 
@@ -38,7 +38,18 @@ def drafts():
 
 @router.post('')
 def start(request: DraftStart):
-    return run(service.start, request.base_profile_id)
+    return run(service.start, request.base_profile_id, request.presentation)
+
+
+@router.post('/preview')
+def form_preview(request: DraftPreview):
+    from ai.agents.cv_agent import source_document
+    from backend.app.services.cv_renderer import render_html
+    document=source_document(request.profile,'form-preview',language='vi')
+    try:
+        return {'html':render_html(document,request.presentation.template,request.presentation.model_dump(mode='json'))}
+    except (ValueError,LookupError) as error:
+        raise HTTPException(422,str(error)) from error
 
 
 @router.post('/writer')

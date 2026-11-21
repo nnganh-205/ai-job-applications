@@ -1,9 +1,10 @@
+import { accountStorage } from "../lib/accountStorage.js";
 import React, { useEffect, useRef, useState } from "react";
 import ProfileForm, {
   sections as profileSections,
   label as profileLabel,
 } from "../features/profile/ProfileForm.jsx";
-import { request } from "../services/api.js";
+import { request } from "../lib/api.js";
 
 const call = (path, body) =>
   request(
@@ -65,7 +66,7 @@ export default function ProfileSessionPanel({
 
   useEffect(() => {
     try {
-      setResumeId(localStorage.getItem(`kltn.${mode}Session`) || "");
+      setResumeId(accountStorage.getItem(`kltn.${mode}Session`) || "");
     } catch {
       /* IDs only. */
     }
@@ -103,7 +104,7 @@ export default function ProfileSessionPanel({
       const result = await action();
       setSession(result);
       try {
-        localStorage.setItem(`kltn.${mode}Session`, result.session_id);
+        accountStorage.setItem(`kltn.${mode}Session`, result.session_id);
       } catch {
         /* Ignore unavailable storage. */
       }

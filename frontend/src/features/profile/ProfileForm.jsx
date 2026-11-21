@@ -1,10 +1,24 @@
-import React from "react";
+import React, { useLayoutEffect, useRef } from "react";
 import FieldPolish from "./FieldPolish.jsx";
 import AIWriter from "./AIWriter.jsx";
 import { resumeFieldHint } from "../resumes/resumeFieldHints.js";
 
 const labels = {
-  contact: "Liên hệ",
+  contact: "Thông tin cá nhân",
+  headline: "Vị trí ứng tuyển",
+  date_of_birth: "Ngày sinh",
+  gender: "Giới tính",
+  interests: "Sở thích",
+  additional_info: "Thông tin thêm",
+  certifications: "Chứng chỉ",
+  awards: "Danh hiệu và giải thưởng",
+  references: "Người giới thiệu",
+  name: "Tên chứng chỉ",
+  issuer: "Đơn vị cấp",
+  date: "Thời gian",
+  title: "Danh hiệu / giải thưởng",
+  position: "Chức vụ",
+  relationship: "Mối quan hệ",
   experience: "Kinh nghiệm",
   project: "Dự án",
   education: "Học vấn",
@@ -17,6 +31,7 @@ const labels = {
   location: "Địa điểm",
   job_title: "Chức danh",
   role: "Vai trò",
+  technologies: "Công nghệ sử dụng",
   company: "Công ty",
   employment_type: "Hình thức",
   start_date: "Ngày bắt đầu",
@@ -24,15 +39,10 @@ const labels = {
   is_current: "Đang làm việc",
   description: "Mô tả",
   responsibilities: "Trách nhiệm",
-  achievements: "Thành tích",
-  technologies_used: "Công nghệ sử dụng",
   original_bullets: "Nội dung gốc",
   project_name: "Tên dự án",
   project_type: "Loại dự án",
-  technologies: "Công nghệ",
   objectives: "Mục tiêu",
-  contributions: "Đóng góp",
-  outcomes: "Kết quả",
   github_url: "URL GitHub",
   demo_url: "URL demo",
   project_url: "URL dự án",
@@ -69,12 +79,20 @@ export const sections = [
   "education",
   "involvement",
   "skills",
+  "certifications",
+  "awards",
+  "references",
   "summary",
 ];
 export const label = (key) => labels[key] || key;
 const visibleFields = {
   contact: [
     "full_name",
+    "headline",
+    "date_of_birth",
+    "gender",
+    "interests",
+    "additional_info",
     "email",
     "phone",
     "location",
@@ -100,21 +118,21 @@ const visibleFields = {
     "end_date",
     "is_current",
     "description",
-    "achievements",
-    "technologies_used",
   ],
   project: [
     "project_name",
     "role",
+    "technologies",
+    "github_url",
     "start_date",
     "end_date",
-    "technologies",
     "description",
-    "contributions",
-    "outcomes",
     "project_url",
   ],
   skills: ["group", "items"],
+  certifications: ["name", "issuer", "date", "description"],
+  awards: ["title", "organization", "date", "description"],
+  references: ["full_name", "position", "organization", "email", "phone", "relationship", "description"],
   involvement: [
     "activity_name",
     "organization",
@@ -133,6 +151,20 @@ const resolve = (s, root) =>
         )
       : s;
 
+function GrowingTextarea(props) {
+  const ref=useRef(null);
+  useLayoutEffect(()=>{
+    const element=ref.current;
+    if (!element)return;
+    const resize=()=>{element.style.height='auto';const style=getComputedStyle(element);element.style.height=(element.scrollHeight+parseFloat(style.borderTopWidth||0)+parseFloat(style.borderBottomWidth||0))+'px';};
+    resize();
+    const observer=new ResizeObserver(resize);
+    observer.observe(element);
+    return ()=>observer.disconnect();
+  },[props.value]);
+  return <textarea {...props} ref={ref} rows={2} wrap="soft" style={{overflow:'hidden',resize:'vertical',overflowWrap:'anywhere',whiteSpace:'pre-wrap'}} />;
+}
+
 export default function ProfileForm({
   profile,
   initialProfile,
@@ -146,22 +178,17 @@ export default function ProfileForm({
   hideEntryActions = false,
   hideAdd = false,
   writerAction = null,
+  allowedFields = null,
 }) {
   function field(key, spec, value, change, entry = null) {
     const type = resolve(spec, schema).type;
-    const [guide, placeholder] = compact
-      ? resumeFieldHint(section, key)
-      : ["", ""];
-    const hint =
-      guide ||
-      (review
-        ? "Thông tin AI trích xuất bổ sung. Kiểm tra với nội dung bạn đã kể; xóa dòng không chính xác hoặc trùng lặp."
-        : "");
+    const [, placeholder] = compact ? resumeFieldHint(section, key) : ["", ""];
     const fieldLabel =
       review && key === "original_bullets"
         ? "Nội dung AI trích xuất bổ sung"
         : label(key);
     if (key === "id") return null;
+    if (allowedFields && !allowedFields.includes(key)) return null;
     if (
       compact &&
       !visibleFields[section]?.includes(key) &&
@@ -184,21 +211,17 @@ export default function ProfileForm({
             onChange={(e) => change(e.target.checked)}
           />
           {fieldLabel}
-          {hint && <small className="cv-field-hint">{hint}</small>}
         </label>
       );
     if (type === "array")
       return (
         <div key={key} className="profile-writer-field">
           {fieldLabel}
-          <small className="cv-field-hint">{hint || "Mỗi dòng một mục"}</small>
-          <textarea
-            disabled={disabled}
-            aria-label={fieldLabel}
-            placeholder={placeholder}
-            value={(value || []).join("\n")}
-            onChange={(e) => change(e.target.value.split("\n"))}
-          />
+          {!(entry && ["description", "responsibilities", "contributions", "details"].includes(key)
+            && ["experience", "project", "involvement", "education"].includes(section)) && (
+            <GrowingTextarea disabled={disabled} aria-label={fieldLabel} placeholder={placeholder}
+              value={(value || []).join("\n")} onChange={(e) => change(e.target.value.split("\n"))} />
+          )}
           {entry &&
             [
               "description",
@@ -226,11 +249,20 @@ export default function ProfileForm({
                 value={value || []}
                 disabled={disabled}
                 onApply={change}
-                action={
-                  key === "description" || key === "details"
-                    ? writerAction
-                    : null
-                }
+                renderSource={(suggestions, hasPreview) => hasPreview ? (
+                  <div className="writer-source-list">
+                    {(value || []).map((line, index) => <div className="writer-source-line" key={index}>
+                      <textarea aria-label={`${fieldLabel}, câu ${index + 1}`} rows={Math.min(5, Math.max(2, Math.ceil(line.length / 70)))}
+                        value={line} disabled={disabled} onChange={(event) => {
+                          const next = [...(value || [])]; next[index] = event.target.value;
+                          change(next.flatMap((text) => text.split("\n")));
+                        }} />
+                      {suggestions(index)}
+                    </div>)}
+                  </div>
+                ) : <textarea disabled={disabled} aria-label={fieldLabel} placeholder={placeholder}
+                  value={(value || []).join("\n")} onChange={(event) => change(event.target.value.split("\n"))} />}
+                action={writerAction}
               />
             )}
           {["outcomes", "achievements"].includes(key) && (
@@ -253,8 +285,9 @@ export default function ProfileForm({
     return (
       <label key={key}>
         {fieldLabel}
-        {hint && <small className="cv-field-hint">{hint}</small>}
-        {["summary", "original_description"].includes(key) ? (
+        {section==='project' && ['project_name','github_url','project_url'].includes(key) ? (
+          <GrowingTextarea {...props} />
+        ) : ["summary", "original_description"].includes(key) ? (
           <textarea {...props} rows={5} />
         ) : (
           <input
@@ -262,7 +295,7 @@ export default function ProfileForm({
             type={key === "email" ? "email" : "text"}
             placeholder={
               placeholder ||
-              (key.includes("date") ? "Ví dụ: 09/2024" : undefined)
+              (key === "date_of_birth" ? "Ví dụ: 15/08/2004" : key.includes("date") ? "Ví dụ: 09/2024" : undefined)
             }
           />
         )}
@@ -285,7 +318,7 @@ export default function ProfileForm({
   if (section === "contact")
     return (
       <div className="form-grid">
-        {Object.entries(spec.properties).map(([key, s]) =>
+        {(allowedFields ? allowedFields.filter((key) => spec.properties[key]).map((key) => [key, spec.properties[key]]) : Object.entries(spec.properties)).map(([key, s]) =>
           field(key, s, profile.contact[key], (value) =>
             onChange({
               ...profile,
@@ -298,20 +331,20 @@ export default function ProfileForm({
   const entrySpec = resolve(spec.items, schema);
   return (
     <div>
-      {compact && !profile[section].length && (
+      {compact && !(profile[section] || []).length && (
         <p className="cv-form-empty">
           Chưa có {label(section).toLowerCase()}. Thêm một mục bên dưới hoặc bỏ
           qua nếu không phù hợp.
         </p>
       )}
-      {profile[section].map((entry, index) =>
+      {(profile[section] || []).map((entry, index) =>
         entryIndex !== null && entryIndex !== index ? null : (
           <fieldset key={entry.id || index} disabled={disabled}>
             <legend>
               {label(section)} {index + 1}
             </legend>
             <div className="form-grid">
-              {Object.entries(entrySpec.properties).map(([key, s]) =>
+              {(allowedFields ? allowedFields.filter((key) => entrySpec.properties[key]).map((key) => [key, entrySpec.properties[key]]) : Object.entries(entrySpec.properties)).map(([key, s]) =>
                 field(
                   key,
                   s,
@@ -319,7 +352,7 @@ export default function ProfileForm({
                   (value) =>
                     onChange({
                       ...profile,
-                      [section]: profile[section].map((x, i) =>
+                      [section]: (profile[section] || []).map((x, i) =>
                         i === index ? { ...x, [key]: value } : x,
                       ),
                     }),
@@ -334,7 +367,7 @@ export default function ProfileForm({
                 onClick={() =>
                   onChange({
                     ...profile,
-                    [section]: profile[section].filter((_, i) => i !== index),
+                    [section]: (profile[section] || []).filter((_, i) => i !== index),
                   })
                 }
               >
@@ -349,7 +382,7 @@ export default function ProfileForm({
           type="button"
           disabled={disabled}
           onClick={() =>
-            onChange({ ...profile, [section]: [...profile[section], {}] })
+            onChange({ ...profile, [section]: [...(profile[section] || []), {}] })
           }
         >
           Thêm {label(section).toLowerCase()}

@@ -50,6 +50,30 @@ class ResumeTests(unittest.TestCase):
         self.assertEqual(draft['document'],changed['document'])
         with self.assertRaises(RevisionConflict):resumes.save(draft['resume_id'],ResumeSave(expected_version=1,title='Stale',document=draft['document'],presentation=Presentation()))
 
+    def test_delete_removes_only_selected_cv_and_its_versions(self):
+        draft = self.create()
+        other = resumes.duplicate(draft['resume_id'])
+        published = resumes.publish(draft['resume_id'], ResumePublish(expected_version=1, event_id='delete-test'))
+        other_published = resumes.publish(other['resume_id'], ResumePublish(expected_version=1, event_id='keep-test'))
+        result = resumes.delete(draft['resume_id'], 1)
+        self.assertTrue(result['deleted'])
+        with self.assertRaises(LookupError): resumes.read(draft['resume_id'])
+        self.assertIsNone(records.get('cv_versions', published['cv_id']))
+        self.assertFalse(any(item['resume_id'] == draft['resume_id'] for item in records.list_kind('resume_history')))
+        self.assertEqual([item['resume_id'] for item in resumes.library()], [other['resume_id']])
+        self.assertIsNotNone(records.get('cv_versions', other_published['cv_id']))
+        self.assertIsNotNone(profiles.load_profile_record('fixture', profiles.DEFAULT_STORAGE_DIR))
+
+    def test_delete_rejects_stale_version_without_removing_data(self):
+        draft = self.create()
+        changed = resumes.save(draft['resume_id'], ResumeSave(expected_version=1, title='Changed', document=draft['document'], presentation=Presentation()))
+        with self.assertRaises(RevisionConflict): resumes.delete(draft['resume_id'], 1)
+        self.assertEqual(resumes.read(draft['resume_id']), changed)
+        self.assertTrue(records.list_kind('resume_history'))
+
+    def test_delete_missing_cv_is_not_successful(self):
+        with self.assertRaises(LookupError): resumes.delete('resume_' + '0' * 32, 1)
+
     def test_pdf_preserves_vietnamese_and_last_bullet_across_pages(self):
         import pymupdf
         from backend.app.services.cv_renderer import render_pdf

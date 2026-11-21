@@ -5,8 +5,8 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { request } from "../../services/api.js";
-import { getTask, retryTask } from "../../services/tasks.js";
+import { request } from "../../lib/api.js";
+import { getTask, retryTask } from "../../lib/tasks.js";
 import Icon from "../../components/ui/Icon.jsx";
 import AssistantIntakeCard from "./AssistantIntakeCard.jsx";
 import CVVersionNotice from "../../components/CVVersionNotice.jsx";
@@ -18,6 +18,7 @@ const actions = [
   ["evaluate", "Xem độ phù hợp"],
   ["update_profile", "Bổ sung hồ sơ"],
   ["find_jobs", "Tìm việc phù hợp"],
+  ["labor_law", "Hỏi luật lao động"],
 ];
 const send = (path, body) =>
   request(path, {
@@ -36,13 +37,10 @@ function AssistantPage({ id }) {
   const pageRef = useRef(null);
   const [params] = useSearchParams();
   const creatingCV = params.get("create") === "cv";
-  const [choices, setChoices] = useState(null),
-    [history, setHistory] = useState([]),
-    [source, setSource] = useState(
-      params.get("cv") ? "cv:" + params.get("cv") : "",
-    ),
-    [posting, setPosting] = useState(params.get("job") || ""),
-    [language, setLanguage] = useState("vi");
+  const [history, setHistory] = useState([]);
+  const source = params.get("cv") ? "cv:" + params.get("cv") : "";
+  const posting = params.get("job") || "";
+  const language = "vi";
   const [session, setSession] = useState(null),
     [task, setTask] = useState(null),
     [text, setText] = useState(
@@ -55,8 +53,7 @@ function AssistantPage({ id }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [reload, setReload] = useState(0);
-  const [historyOpen, setHistoryOpen] = useState(false),
-    [contextOpen, setContextOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [startKey, setStartKey] = useState(() => crypto.randomUUID()),
     [messageKey, setMessageKey] = useState(() => crypto.randomUUID());
   useEffect(
@@ -66,17 +63,9 @@ function AssistantPage({ id }) {
   useEffect(() => setMessageKey(crypto.randomUUID()), [text]);
   useEffect(() => {
     const c = new AbortController();
-    Promise.all([
-      request("/api/assistant", { signal: c.signal }),
-      request("/api/profile-drafts/profiles", { signal: c.signal }),
-      request("/api/resumes/published", { signal: c.signal }),
-      request("/api/dashboard", { signal: c.signal }),
-    ])
-      .then(([h, p, v, j]) => {
-        if (!c.signal.aborted) {
-          setHistory(h);
-          setChoices({ profiles: p, versions: v, jobs: j.jobs });
-        }
+    request("/api/assistant", { signal: c.signal })
+      .then((history) => {
+        if (!c.signal.aborted) setHistory(history);
       })
       .catch((e) => {
         if (e.name !== "AbortError") setError(e.message);
@@ -230,9 +219,6 @@ function AssistantPage({ id }) {
           to="/workspace/assistant"
           onClick={() => {
             setText("");
-            setSource("");
-            setPosting("");
-            setContextOpen(false);
             setError("");
           }}
         >
@@ -264,6 +250,7 @@ function AssistantPage({ id }) {
           <h2>
             <Icon name="chat" size={16} /> Cuộc trò chuyện
           </h2>
+          <nav className="assistant-history-list" aria-label="Danh sách cuộc trò chuyện" tabIndex={0}>
           {history.length ? (
             history.map((h) => (
               <Link
@@ -273,7 +260,7 @@ function AssistantPage({ id }) {
               >
                 <strong>{h.title}</strong>
                 <small>
-                  {h.context.source_name || "Chưa chọn hồ sơ"} ·{" "}
+                  {h.context.source_name || "Tạo CV mới"} ·{" "}
                   {new Date(h.updated_at).toLocaleDateString("vi-VN")}
                 </small>
               </Link>
@@ -288,6 +275,7 @@ function AssistantPage({ id }) {
               </p>
             </div>
           )}
+          </nav>
         </aside>
         <div className="assistant-main">
           {!id ? (
@@ -325,14 +313,6 @@ function AssistantPage({ id }) {
                         <Icon name="file" size={15} /> Tải CV lên{" "}
                         <small>PDF, DOCX</small>
                       </Link>
-                      <button
-                        type="button"
-                        aria-expanded={contextOpen}
-                        aria-controls="assistant-source-options"
-                        onClick={() => setContextOpen((v) => !v)}
-                      >
-                        <Icon name="plus" size={15} /> Chọn CV / hồ sơ
-                      </button>
                     </div>
                     <button
                       className="assistant-send"
@@ -343,87 +323,6 @@ function AssistantPage({ id }) {
                     </button>
                   </div>
                 </div>
-                {contextOpen && (
-                  <div
-                    id="assistant-source-options"
-                    className="assistant-source-options"
-                  >
-                    {choices ? (
-                      <>
-                        <label>
-                          Hồ sơ hoặc CV
-                          <select
-                            name="source"
-                            value={source}
-                            onChange={(e) => setSource(e.target.value)}
-                          >
-                            <option value="">
-                              Không đính kèm — tư vấn / tạo CV mới
-                            </option>
-                            <optgroup label="Hồ sơ đã xác nhận">
-                              {choices.profiles.map((p) => (
-                                <option
-                                  key={p.profile_id}
-                                  value={"profile:" + p.profile_id}
-                                >
-                                  {p.full_name || "Hồ sơ của tôi"} ·{" "}
-                                  {p.profile_id.slice(-6)}
-                                </option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Bản CV đã xác nhận">
-                              {choices.versions.map((v) => (
-                                <option key={v.cv_id} value={"cv:" + v.cv_id}>
-                                  {v.title || "CV của tôi"} ·{" "}
-                                  {v.draft_version
-                                    ? `v${v.draft_version}`
-                                    : v.cv_id.slice(-6)}
-                                  {v.cv_version?.content_stale
-                                    ? " · Nội dung cũ"
-                                    : ""}
-                                </option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </label>
-                        <label>
-                          Công việc (tùy chọn)
-                          <select
-                            name="posting_id"
-                            value={posting}
-                            onChange={(e) => setPosting(e.target.value)}
-                          >
-                            <option value="">Chưa chọn công việc</option>
-                            {choices.jobs.map((j) => (
-                              <option key={j.posting_id} value={j.posting_id}>
-                                {j.title} · {j.company || j.source_name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          Ngôn ngữ tiêu đề / nhận xét CV
-                          <select
-                            name="language"
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
-                          >
-                            <option value="vi">Tiếng Việt</option>
-                            <option value="en">English</option>
-                          </select>
-                        </label>
-                      </>
-                    ) : (
-                      <p role="status">Đang tải hồ sơ và công việc…</p>
-                    )}
-                  </div>
-                )}
-                {source && (
-                  <p className="assistant-selected-source">
-                    <Icon name="check" size={13} /> Đã chọn hồ sơ / CV cho cuộc
-                    trò chuyện này
-                  </p>
-                )}
                 <small className="assistant-input-note">
                   AI giúp diễn đạt rõ hơn dựa trên thông tin bạn cung cấp. Bạn
                   luôn là người duyệt thay đổi.
@@ -437,24 +336,14 @@ function AssistantPage({ id }) {
                     "Mình muốn tạo một CV mới qua trò chuyện. Bạn hướng dẫn mình nhé.",
                   ],
                   [
-                    "file",
-                    "Sinh viên chưa có kinh nghiệm nên viết CV thế nào?",
-                    "Sinh viên chưa có kinh nghiệm làm việc thì nên viết CV như thế nào?",
-                  ],
-                  [
-                    "spark",
+                    "chat",
                     "Rà soát và cải thiện câu chữ CV",
                     "Hãy rà soát CV và đề xuất cách diễn đạt ngắn gọn, rõ ràng hơn, giữ nguyên các thông tin của tôi.",
                   ],
                   [
-                    "filter",
-                    "Điều chỉnh CV theo công việc",
-                    "Hãy giúp tôi điều chỉnh CV theo công việc đã chọn, chỉ sử dụng kinh nghiệm và kỹ năng có trong hồ sơ.",
-                  ],
-                  [
-                    "briefcase",
-                    "Tìm công việc phù hợp với hồ sơ",
-                    "Hãy tìm những công việc phù hợp với kỹ năng và kinh nghiệm trong hồ sơ của tôi.",
+                    "shield",
+                    "Hỏi luật lao động Việt Nam",
+                    "Hỏi luật lao động",
                   ],
                 ].map(([icon, label, prompt]) => (
                   <button
@@ -463,7 +352,6 @@ function AssistantPage({ id }) {
                     disabled={busy}
                     onClick={() => {
                       setText(prompt);
-                      setContextOpen(!["chat", "file"].includes(icon));
                     }}
                   >
                     <Icon name={icon} size={17} />
@@ -508,6 +396,17 @@ function AssistantPage({ id }) {
                 {session.messages.map((m, i) => (
                   <article key={i} className={"assistant-bubble " + m.role}>
                     <p>{m.text}</p>
+                    {m.result?.type === "labor_law" && m.result.sources?.length > 0 && (
+                      <div className="assistant-law-sources">
+                        <strong>Nguồn đối chiếu</strong>
+                        {m.result.sources.map((source, index) => (
+                          <a key={`${source.url}-${source.page}-${index}`} href={source.url} target="_blank" rel="noopener noreferrer">
+                            {source.title}{source.article ? ` · ${source.article}` : ""} · trang {source.page} ↗
+                          </a>
+                        ))}
+                        <small>Kiểm tra tình trạng hiệu lực và sửa đổi trên cổng văn bản trước khi áp dụng.</small>
+                      </div>
+                    )}
                     {m.result?.type === "cv_intake" &&
                       i ===
                         session.messages.findLastIndex(
@@ -520,11 +419,8 @@ function AssistantPage({ id }) {
                           <div key={j}>
                             <small>
                               {{
-                                role: "Vai trò",
                                 description: "Mô tả",
                                 summary: "Tóm tắt",
-                                contributions: "Đóng góp",
-                                outcomes: "Kết quả",
                               }[suggestion.field] || "Nội dung CV"}
                             </small>
                             {Array.isArray(suggestion.proposed) ? (
@@ -611,7 +507,7 @@ function AssistantPage({ id }) {
                                   )
                                 }
                               >
-                                ✦ AI Writer ·{" "}
+                                AI Writer ·{" "}
                                 {section === "project"
                                   ? "Dự án"
                                   : "Kinh nghiệm"}

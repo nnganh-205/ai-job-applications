@@ -14,18 +14,35 @@ HEADINGS = {
     'en': ['Experience', 'Projects', 'Education', 'Activities', 'Skills'],
     'vi': ['Kinh nghiệm', 'Dự án', 'Học vấn', 'Hoạt động', 'Kỹ năng'],
 }
+HIDDEN_SOURCE_FIELDS = {
+    'experience': {'technologies_used'},
+    'project': set(),
+}
+TITLE_FIELDS = {
+    'certifications': ('name',),
+    'awards': ('title',),
+    'references': ('full_name',),
+    'experience': ('job_title',),
+    'project': ('project_name',),
+    'education': ('institution',),
+    'involvement': ('role', 'activity_name'),
+}
 
 
 def source_document(profile: MasterProfile, profile_id: str, job_id=None, language='en') -> CVDocument:
     sections = []
-    for kind, heading in zip(('experience', 'project', 'education', 'involvement', 'skills'), HEADINGS[language]):
+    headings = dict(zip(('experience', 'project', 'education', 'involvement', 'skills'), HEADINGS[language]))
+    headings.update(dict(certifications='Chứng chỉ',awards='Danh hiệu và giải thưởng',references='Người giới thiệu') if language=='vi' else dict(certifications='Certifications',awards='Honors and awards',references='References'))
+    for kind in ('education', 'experience', 'project', 'involvement', 'skills', 'certifications', 'awards', 'references'):
+        heading = headings[kind]
         entries = []
         for index, entry in enumerate(getattr(profile, kind)):
             data = entry.model_dump()
             # Extraction can leave an all-null optional entry. A section label
             # alone is not candidate content and must not become a phantom CV fact.
             meaningful=lambda value: bool(value.strip()) if isinstance(value,str) else any(isinstance(item,str) and item.strip() for item in value) if isinstance(value,list) else False
-            if not any(meaningful(value) for key,value in data.items() if key!='id'):
+            hidden_fields = HIDDEN_SOURCE_FIELDS.get(kind, set())
+            if not any(meaningful(value) for key,value in data.items() if key != 'id' and key not in hidden_fields):
                 continue
             if kind=='skills' and not any(item.strip() for item in entry.items):
                 continue
@@ -34,17 +51,26 @@ def source_document(profile: MasterProfile, profile_id: str, job_id=None, langua
                 title, subtitle = entry.group or heading, None
                 bullets = [CVBullet(text=', '.join(entry.items), source_refs=[f'{root}/items/{n}' for n in range(len(entry.items))])] if entry.items else []
             else:
-                title = next((data.get(key) for key in ('job_title', 'project_name', 'institution', 'role', 'activity_name') if data.get(key)), heading)
-                subtitle = ' · '.join(dict.fromkeys(data[key] for key in ('company', 'degree', 'field_of_study', 'major', 'organization', 'location') if data.get(key))) or None
+                title = next((data.get(key) for key in TITLE_FIELDS[kind] if data.get(key)), heading)
+                subtitle_keys = ('company', 'degree', 'field_of_study', 'major', 'position', 'organization', 'issuer', 'location') + (('role',) if kind == 'project' else ())
+                subtitle = ' · '.join(dict.fromkeys(data[key] for key in subtitle_keys if data.get(key))) or None
                 bullets, seen = [], set()
-                for key in ('description', 'responsibilities', 'achievements', 'objectives', 'contributions', 'outcomes', 'details', 'academic_achievements', 'relevant_coursework', 'technologies', 'technologies_used', 'original_bullets', 'original_description', 'gpa', 'github_url', 'demo_url', 'project_url'):
+                for key in ('description', 'responsibilities', 'achievements', 'objectives', 'contributions', 'outcomes', 'details', 'academic_achievements', 'relevant_coursework', 'technologies', 'technologies_used', 'original_bullets', 'original_description', 'gpa', 'github_url', 'demo_url', 'project_url', 'email', 'phone', 'relationship'):
+                    if key in hidden_fields:
+                        continue
                     value = data.get(key)
+                    if key == 'technologies' and isinstance(value, list):
+                        remaining = [(n, text) for n, text in enumerate(value) if text and text.strip()]
+                        if remaining:
+                            bullets.append(CVBullet(text=', '.join(text for _, text in remaining), source_refs=[f'{root}/{key}/{n}' for n, _ in remaining]))
+                        continue
                     values = list(enumerate(value)) if isinstance(value, list) else [(None, value)]
                     for n, text in values:
                         if isinstance(text, str) and text.strip() and text not in seen:
                             seen.add(text)
                             bullets.append(CVBullet(text=text, source_refs=[f'{root}/{key}' + (f'/{n}' if n is not None else '')]))
             period = ' – '.join(str(value) for value in (data.get('start_date'), data.get('end_date') or data.get('graduation_date') or ('Present' if data.get('is_current') else None)) if value) or None
+            period = period or data.get('date') or data.get('period')
             entries.append(CVEntry(source_entry_id=entry.id or root, title=title, subtitle=subtitle, period=period, bullets=bullets))
         if entries:
             sections.append(CVSection(kind=kind, heading=heading, entries=entries))
@@ -113,7 +139,7 @@ def plan_cv(document: CVDocument, requirements=None, mode='generate'):
     for section in result.sections:
         for entry in section.entries:
             entry.bullets = sorted((bullet for bullet in entry.bullets if bullet.source_refs[0] in rank), key=lambda bullet: rank[bullet.source_refs[0]])
-        section.entries = [entry for entry in section.entries if entry.bullets or section.kind == 'education']
+        section.entries = [entry for entry in section.entries if entry.bullets or section.kind in {'education','certifications','awards','references'}]
     result.sections = [section for section in result.sections if section.entries]
     plan.review.warnings.extend([
         'CV tự động chỉ chọn/sắp xếp nội dung nguồn; đề xuất viết lại cần bạn đối chiếu và duyệt.',

@@ -12,8 +12,7 @@ from backend.app.db.job_posting_repository import utc_now
 def read(key,connection=None):
     if connection is None:data=records.get('resume_drafts',key)
     else:
-        row=connection.execute("SELECT payload FROM kltn_app.records WHERE kind='resume_drafts' AND record_id=%s",(key,)).fetchone()
-        data=row['payload'] if row else None
+        data=database.get_record('resume_drafts', key, connection=connection)
     if data is None:raise LookupError('Không tìm thấy CV')
     return data
 
@@ -126,3 +125,25 @@ def duplicate(key):
 
 def library():
     return [{**{k:d[k] for k in ('resume_id','title','version','updated_at','latest_cv_id','presentation')}, 'has_editing_draft':d.get('source_edit',{}).get('status')=='editing', 'published_version':next((p['draft_version'] for p in d.get('publications',{}).values() if p.get('cv_id')==d.get('latest_cv_id')),None)} for d in sorted(records.list_kind('resume_drafts'),key=lambda d:d['updated_at'],reverse=True)]
+
+
+def delete(key, expected_version):
+    with locked(key) as connection:
+        data = read(key, connection)
+        if data['version'] != expected_version:
+            raise RevisionConflict('CV vừa được thay đổi. Tải lại trang trước khi xoá.')
+        from backend.app.core.workspace import record_kind
+        if connection is not None:
+            connection.execute(
+                "DELETE FROM kltn_app.records WHERE (kind=%s AND record_id=%s) "
+                "OR (kind IN (%s,%s) AND payload->>'resume_id'=%s)",
+                (record_kind('resume_drafts'), key, record_kind('resume_history'), record_kind('cv_versions'), key),
+            )
+        else:
+            for kind, field in [('resume_history', 'version'), ('cv_versions', 'cv_id')]:
+                for value in records.list_kind(kind):
+                    if value.get('resume_id') == key:
+                        record_id = f"{key}:{value[field]}" if kind == 'resume_history' else value[field]
+                        records.delete(kind, record_id)
+            records.delete('resume_drafts', key)
+    return {'resume_id': key, 'deleted': True}

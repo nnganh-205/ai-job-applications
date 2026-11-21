@@ -7,7 +7,6 @@ from ai.agents.cv_form import (
     form_plan_schema,
     preferred_summary_refs,
 )
-from ai.llm.ollama_client import OllamaConnectionError
 from backend.app.schemas.profile import MasterProfile
 
 
@@ -80,36 +79,26 @@ class FormRefinementTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_form_document(self.document, refined)
 
-    def test_ambiguous_prefix_and_model_failure_leave_source_intact(self):
+    def test_form_refines_without_inference_and_keeps_source_unchanged(self):
+        original = self.document.model_copy(deep=True)
         self.assertEqual(clean_sentence("- 25%"), "- 25%")
         self.assertEqual(clean_sentence("Thực hiện việc công ty giao."), "Thực hiện việc công ty giao.")
-        with patch("ai.agents.cv_form.request_structured", side_effect=OllamaConnectionError()):
+        with patch("ai.llm.ollama_client.request_structured", side_effect=AssertionError("Unexpected inference")) as model:
             result, info = refine_form(self.document)
-        self.assertEqual(result, self.document)
-        self.assertEqual(info["status"], "fallback")
+        model.assert_not_called()
+        self.assertEqual(self.document, original)
+        self.assertEqual(info["status"], "completed")
+        self.assertEqual(result.summary.text, "Vai trò: Thực tập sinh. Kỹ năng: SQL, Python.")
+        validate_form_document(original, result)
 
-    def test_large_form_batches_reject_cross_batch_refs_and_keep_failure_atomic(self):
-        from ai.llm.ollama_client import llm_deadline
+    def test_large_form_keeps_every_fact_and_number_without_inference(self):
         profile = MasterProfile(contact={'full_name':'Giả lập'}, experience=[{
             'job_title':'Trợ lý', 'description':[f'Có hỗ trợ kiểm tra {n} phiếu bằng SQL.' for n in range(1,10)]
         }], project=[], education=[], involvement=[], skills=[])
         doc = source_document(profile, 'batch-fixture', language='vi')
-        seen = []
-        def response(messages, schema, **kwargs):
-            payload = __import__('json').loads(messages[1]['content']); seen.append(payload)
-            edits = [{'source_ref':c['source_ref'], 'proposed_text':c['proposed_text']} for c in payload['candidates']]
-            if len(seen)==1:
-                edits.append({'source_ref':'/experience/0/description/8', 'proposed_text':'Hỗ trợ kiểm tra 9 phiếu bằng SQL.'})
-            return FormPlan(edits=edits, summary_refs=[])
-        with patch('ai.agents.cv_form.request_structured', side_effect=response), patch(
-                'ai.agents.cv_form.llm_deadline', wraps=llm_deadline) as deadline:
+        with patch('ai.llm.ollama_client.request_structured', side_effect=AssertionError('Unexpected inference')):
             result, info = refine_form(doc)
-        deadline.assert_called_once_with(270)
-        self.assertEqual([len(p['candidates']) for p in seen], [4,4,1])
-        self.assertTrue(all(not p['summary_options'] for p in seen[1:]))
-        self.assertEqual((info['applied'],info['rejected']), (9,1))
-        validate_form_document(doc,result)
-        with patch('ai.agents.cv_form.request_structured', side_effect=[FormPlan(edits=[],summary_refs=[]), OllamaConnectionError()]):
-            result, info = refine_form(doc)
-        self.assertEqual(result,doc)
-        self.assertEqual(info['status'],'fallback')
+        self.assertEqual((info['applied'], info['rejected']), (9, 0))
+        self.assertEqual([b.text for b in result.sections[0].entries[0].bullets],
+                         [f'Hỗ trợ kiểm tra {n} phiếu bằng SQL.' for n in range(1, 10)])
+        validate_form_document(doc, result)

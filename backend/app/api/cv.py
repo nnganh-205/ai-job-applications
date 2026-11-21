@@ -11,7 +11,7 @@ from backend.app.api.dashboard import execute
 from backend.app.db import workflow_repository as records
 from backend.app.schemas.cv import CVApproval, CVDocument, CVSession, CVStart
 from backend.app.db.profile_revision_repository import RevisionConflict
-from backend.app.services.cv_renderer import TEMPLATES, render_html, render_pdf
+from backend.app.services.cv_renderer import render_html, render_pdf
 
 router = APIRouter(prefix='/api/cv', tags=['CV Review and Generation'])
 SessionID = Annotated[str, Path(pattern=r'^[a-f0-9]{32}$')]
@@ -33,14 +33,26 @@ def run(function, *args):
 
 @router.get('/templates')
 def templates():
-    return TEMPLATES
+    from backend.app.services.template_catalog import list_templates
+    return list_templates()
 
 
 @router.get('/templates/{template_id}/preview', response_class=HTMLResponse)
 def template_preview(template_id: str):
     from backend.app.services.cv_templates import metadata, example_document
     meta=run(metadata,template_id)
-    return HTMLResponse(run(render_html,example_document(),template_id,{'template':template_id,'font':meta['font'],'color':meta['color']}),headers={'Cache-Control':'public, max-age=3600'})
+    return HTMLResponse(run(render_html,example_document(),template_id,{'template':template_id,'font':meta['font'],'color':meta['color']}),headers={'Cache-Control':'no-store'})
+
+
+@router.get('/templates/{template_id}/thumbnail')
+def template_thumbnail(template_id: str):
+    from backend.app.services.cv_templates import metadata
+    from backend.app.services.designed_templates import thumbnail
+    meta=run(metadata,template_id)
+    if meta.get('renderer') != 'designed':
+        raise HTTPException(404, 'Mẫu không có ảnh thu nhỏ thiết kế.')
+    return Response(run(thumbnail,meta), media_type='image/svg+xml',
+                    headers={'Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'", 'X-Content-Type-Options':'nosniff'})
 
 
 @router.post('/sessions', response_model=CVSession)

@@ -3,8 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/ui/Icon.jsx';
 import PageHeading from '../../components/ui/PageHeading.jsx';
 import {EmptyState} from '../../components/ui/PageState.jsx';
-import { request } from '../../services/api.js';
-import { getTask, retryTask, taskLabel } from '../../services/tasks.js';
+import { request } from '../../lib/api.js';
+import { getTask, retryTask, taskLabel } from '../../lib/tasks.js';
 
 const labels = { relevance: 'Đúng trọng tâm', clarity: 'Diễn đạt rõ ràng', specificity: 'Ví dụ cụ thể', technical_accuracy: 'Độ chính xác chuyên môn' };
 function Feedback({ value }) {
@@ -70,10 +70,10 @@ function InterviewPage() {
   async function retry() {
     setBusy(true);setError('');try{await retryTask(task.task_id);setReload(n=>n+1);}catch(e){setError(e.message);}finally{setBusy(false);}
   }
-  return <main className="interview-page"><PageHeading eyebrow="LUYỆN TẬP ĐỂ TỰ TIN HƠN" title="Kể câu chuyện của bạn, rõ ràng hơn.">Luyện trả lời qua văn bản với câu hỏi từ CV và công việc bạn chọn. Nhận phản hồi và tiếp tục cải thiện ở lần sau.</PageHeading>
+  return <main className="interview-page"><PageHeading eyebrow="LUYỆN TẬP ĐỂ TỰ TIN HƠN" title="Luyện phỏng vấn">Luyện trả lời qua văn bản với câu hỏi từ CV và công việc bạn chọn. Nhận phản hồi và tiếp tục cải thiện ở lần sau.</PageHeading>
     <div className="form-actions"><Link to="/workspace">Workspace</Link>{id && <Link to="/workspace/interviews">Tạo phiên khác / lịch sử</Link>}</div>
     {error && <p className="error" role="alert">{error} <button onClick={()=>setReload(n=>n+1)}>Tải lại</button></p>}
-    {!id && <><section className="interview-setup-card"><div className="interview-setup-title"><span className="surface-icon"><Icon name="chat" size={24}/></span><div><h2>Chuẩn bị một buổi luyện tập</h2><p>Chọn nội dung, bắt đầu trả lời và nhận góp ý từng câu.</p></div></div>{!choices ? <p role="status">Đang tải CV và việc làm…</p> : !choices.cvs.length || !choices.jobs.length ? <div className="interview-prerequisites"><Link to="/workspace/resumes"><Icon name="file" size={23}/><strong>Chuẩn bị CV của bạn</strong><span>Lưu và xác nhận một bản CV để câu hỏi sát với kinh nghiệm của bạn.</span><small>Mở thư viện CV →</small></Link><Link to="/jobs"><Icon name="briefcase" size={23}/><strong>Chọn vị trí mục tiêu</strong><span>Khám phá yêu cầu của công việc bạn muốn luyện phỏng vấn.</span><small>Khám phá việc làm →</small></Link></div> : <form onSubmit={start} className="practice-setup">
+    {!id && <><section className="interview-setup-card"><div className="interview-setup-title"><span className="surface-icon"><Icon name="chat" size={24}/></span><div><h2>Chuẩn bị một buổi luyện tập</h2><p>Chọn nội dung, bắt đầu trả lời và nhận góp ý từng câu.</p></div></div>{!choices ? <p role="status">Đang tải CV và việc làm…</p> : !choices.cvs.length || !choices.jobs.length ? <div className="interview-prerequisites"><Link to="/workspace"><Icon name="file" size={23}/><strong>Chuẩn bị CV của bạn</strong><span>Lưu và xác nhận một bản CV để câu hỏi sát với kinh nghiệm của bạn.</span><small>Mở Tổng quan →</small></Link><Link to="/jobs"><Icon name="briefcase" size={23}/><strong>Chọn vị trí mục tiêu</strong><span>Khám phá yêu cầu của công việc bạn muốn luyện phỏng vấn.</span><small>Khám phá việc làm →</small></Link></div> : <form onSubmit={start} className="practice-setup">
       <label>CV đã xác nhận<select name="cv_id" required value={cv} onChange={e=>setCV(e.target.value)}><option value="">Chọn phiên bản CV</option>{choices.cvs.map(c=><option value={c.cv_id} key={c.cv_id}>{c.title||'CV đã xác nhận'} · {c.created_at ? new Date(c.created_at).toLocaleString('vi-VN') : c.cv_id.slice(-8)}</option>)}</select></label>
       <label>Vị trí luyện tập<select name="posting_id" required value={job} onChange={e=>setJob(e.target.value)}><option value="">Chọn JD</option>{choices.jobs.map(j=><option value={j.posting_id} key={j.posting_id}>{j.title} · {j.company||j.source_name}</option>)}</select></label>
       <label>Ngôn ngữ<select name="language" value={language} onChange={e=>setLanguage(e.target.value)}><option value="vi">Tiếng Việt</option><option value="en">English</option></select></label>

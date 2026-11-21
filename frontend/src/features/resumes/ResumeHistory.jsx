@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
 import { send } from "./ResumeLibrary.jsx";
 import ProfileLivePreview from "./ProfileLivePreview.jsx";
 import CVPreviewFrame from "../../components/ui/CVPreviewFrame.jsx";
@@ -59,7 +59,6 @@ export default function ResumeHistory({ id, onClose, onRestored }) {
     >
       <header>
         <div>
-          <p className="eyebrow">CV CỦA BẠN</p>
           <h2 id="resume-history-title">Lịch sử phiên bản</h2>
           <p>
             Khôi phục tạo phiên bản mới. Các bản cũ và PDF đã xuất vẫn được giữ

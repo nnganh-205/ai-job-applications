@@ -1,22 +1,28 @@
 import React, { useEffect, useRef, useState } from "react";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
 
 export default function FieldPolish({ value, field, disabled, onApply }) {
   const [busy, setBusy] = useState(false),
     [suggestion, setSuggestion] = useState(null),
     [error, setError] = useState("");
   const version = useRef(0);
+  const controller = useRef(null);
   const [undo, setUndo] = useState(null);
   useEffect(() => {
     version.current++;
+    controller.current?.abort();
     setSuggestion(null);
     setError("");
     setBusy(false);
   }, [value]);
+  useEffect(() => () => { version.current++; controller.current?.abort(); }, []);
   async function polish(e) {
     e.preventDefault();
     e.stopPropagation();
     const current = ++version.current;
+    controller.current?.abort();
+    const abort = new AbortController();
+    controller.current = abort;
     setBusy(true);
     setError("");
     try {
@@ -24,10 +30,11 @@ export default function FieldPolish({ value, field, disabled, onApply }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: value, field }),
+        signal: abort.signal,
       });
       if (version.current === current) setSuggestion(result);
     } catch (e) {
-      if (version.current === current) setError(e.message);
+      if (version.current === current && e.name !== "AbortError") setError(e.message);
     } finally {
       if (version.current === current) setBusy(false);
     }
@@ -36,7 +43,7 @@ export default function FieldPolish({ value, field, disabled, onApply }) {
   return (
     <div className="cv-wording-panel">
       <button type="button" disabled={disabled || busy} onClick={polish}>
-        {busy ? "Đang tinh chỉnh…" : "✦ Tinh chỉnh câu từ"}
+        {busy ? "Đang tinh chỉnh…" : "Tinh chỉnh câu từ"}
       </button>
       {error && <small role="alert">{error}</small>}
       {undo && value === undo.after && (
@@ -55,17 +62,9 @@ export default function FieldPolish({ value, field, disabled, onApply }) {
       )}
       {suggestion &&
         (suggestion.changed ? (
-          <div>
-            <strong>Gợi ý viết cho CV</strong>
-            <div className="writer-before-after">
-              <strong>Trước khi chỉnh</strong>
-              <p className="cv-wording-text">{suggestion.original}</p>
-              <strong>Đề xuất sau khi chỉnh</strong>
-              <p className="cv-wording-text">{suggestion.proposed}</p>
-            </div>
-            <small>
-              Kiểm tra để chắc rằng câu viết lại đúng với việc bạn đã làm.
-            </small>
+          <div className="writer-inline-suggestion">
+            <span className="writer-inline-kicker">Đề xuất tinh chỉnh</span>
+            <p className="cv-wording-text">{suggestion.proposed}</p>
             <button
               type="button"
               disabled={disabled}
@@ -90,7 +89,7 @@ export default function FieldPolish({ value, field, disabled, onApply }) {
             </button>
           </div>
         ) : (
-          <small>Nội dung hiện tại đã phù hợp; chưa có đề xuất thay đổi.</small>
+          null
         ))}
     </div>
   );

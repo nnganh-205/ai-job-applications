@@ -1,5 +1,6 @@
 """Agent 5 graph: confirmed profile -> Qwen -> user approval -> immutable CV version."""
 
+from backend.app.core.workspace import graph_config
 from datetime import datetime, timezone
 from threading import RLock
 from typing import TypedDict
@@ -68,7 +69,7 @@ def save(state):
     from backend.app.services.cv_templates import metadata
     meta=metadata(state['template'])
     data = {'presentation':{'template':state['template'],'template_version':meta['version'],'font':meta['font'],'color':meta['color']}, 'cv_id': cv_id, 'document': state['document'], 'template': state['template'], 'review': state['review'],
-            'created_at': datetime.now(timezone.utc).isoformat(), 'prompt_version':state.get('prompt_version'), 'model': settings.cv_model, 'provider': 'ollama',
+            'created_at': datetime.now(timezone.utc).isoformat(), 'prompt_version':state.get('prompt_version'), 'model': settings.model_for_task('cv'), 'provider': settings.provider_for_task('cv'),
             'warnings': state['warnings'] + ['Chỉnh sửa thủ công chỉ được xác nhận cho phiên bản CV này, không cập nhật Master Profile.']}
     data['source_cv_id']=state['request'].get('cv_id')
     data['source_posting_id']=state['request'].get('posting_id')
@@ -98,7 +99,7 @@ _lock = RLock()
 def view(session_id):
     if records.get('cv_sessions', session_id) is None:
         raise LookupError('Không tìm thấy phiên CV.')
-    state = cv_graph.get_state({'configurable': {'thread_id': 'cv:' + session_id}}).values
+    state = cv_graph.get_state(graph_config('cv:' + session_id)).values
     if not state or 'document' not in state:
         raise ValueError('Phiên tạo CV chưa có kết quả; vui lòng tạo lại.')
     return CVSession(session_id=session_id, status=state['status'], document=state['document'], review=state['review'],
@@ -110,10 +111,10 @@ def start(request,session_id=None):
     previous=records.get('cv_sessions',session_id)
     if previous:
         if previous.get('request')!=request.model_dump(mode='json'):raise RevisionConflict('Phiên CV thuộc đầu vào khác')
-        state=cv_graph.get_state({'configurable':{'thread_id':'cv:'+session_id}}).values
+        state=cv_graph.get_state(graph_config('cv:' + session_id)).values
         if state and state.get('document'):return view(session_id)
     else:records.put('cv_sessions',session_id,{'mode':request.mode,'request':request.model_dump(mode='json')})
-    cv_graph.invoke({'session_id':session_id,'request':request.model_dump(mode='json')},{'configurable':{'thread_id':'cv:'+session_id}})
+    cv_graph.invoke({'session_id':session_id,'request':request.model_dump(mode='json')},graph_config('cv:' + session_id))
     return view(session_id)
 
 
@@ -128,5 +129,5 @@ def confirm(session_id, answer):
             return current
         if answer.decision == 'approve':
             validate_edits(current.document, answer.document or current.document)
-        cv_graph.invoke(Command(resume=answer.model_dump(mode='json')), {'configurable': {'thread_id': 'cv:' + session_id}})
+        cv_graph.invoke(Command(resume=answer.model_dump(mode='json')), graph_config('cv:' + session_id))
         return view(session_id)

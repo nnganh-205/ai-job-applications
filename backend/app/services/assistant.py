@@ -9,24 +9,25 @@ from backend.app.schemas.assistant import AssistantStart,AssistantMessage,Intent
 from backend.app.schemas.cv import CVStart
 from backend.app.schemas.resume import Presentation
 from ai.llm.ollama_client import request_structured,llm_deadline
-from ai.prompts.assistant_prompt import SYSTEM,PROMPT_VERSION
+from ai.prompts.assistant_prompt import CHAT_SYSTEM,PROMPT_VERSION
+from backend.app.services.assistant_routing import ChatDecision, StandaloneChatDecision, SourceMismatch, expand_decision, quick_decision, routing_payload
 from ai.prompts.cv_prompt import CV_PROMPT_VERSION
 from backend.app.core.config import settings
 from backend.app.services import tasks
 from backend.app.services.ai_progress import report
 from backend.app.services.interviews import digest
 
-OWNER_ID=os.getenv('WORKSPACE_OWNER_ID','local-demo')
+from backend.app.core.workspace import owner_id, record_kind
 KIND='assistant_sessions'
-LABELS={'review_cv':'Rà soát CV','tailor_cv':'Điều chỉnh CV theo JD','evaluate':'Xem độ phù hợp','update_profile':'Bổ sung hồ sơ','find_jobs':'Tìm việc phù hợp','clarify':'Làm rõ yêu cầu','advice':'Tư vấn CV','build_cv':'Tạo CV qua trò chuyện','prepare_cv':'Kiểm tra và tạo CV'}
+LABELS={'review_cv':'Rà soát CV','tailor_cv':'Điều chỉnh CV theo JD','evaluate':'Xem độ phù hợp','update_profile':'Bổ sung hồ sơ','find_jobs':'Tìm việc phù hợp','clarify':'Làm rõ yêu cầu','advice':'Tư vấn CV','build_cv':'Tạo CV qua trò chuyện','prepare_cv':'Kiểm tra và tạo CV','labor_law':'Hỏi luật lao động'}
 
 
 def read(key,connection=None):
     tasks.require_database()
     if connection is None:
         with database.connect() as c:return read(key,c)
-    row=connection.execute('SELECT payload FROM kltn_app.records WHERE kind=%s AND record_id=%s',(KIND,key)).fetchone()
-    if row is None or row['payload']['owner_id']!=OWNER_ID:raise LookupError('Không tìm thấy cuộc trò chuyện')
+    row=connection.execute('SELECT payload FROM kltn_app.records WHERE kind=%s AND record_id=%s',(record_kind(KIND),key)).fetchone()
+    if row is None or row['payload']['owner_id']!=owner_id():raise LookupError('Không tìm thấy cuộc trò chuyện')
     return row['payload']
 
 
@@ -36,17 +37,17 @@ def public(session):return {key:value for key,value in session.items() if key no
 def recent():
     tasks.require_database()
     with database.connect() as c:
-        rows=c.execute("SELECT payload FROM kltn_app.records WHERE kind=%s AND payload->>'owner_id'=%s ORDER BY updated_at DESC LIMIT 50",(KIND,OWNER_ID)).fetchall()
+        rows=c.execute("SELECT payload FROM kltn_app.records WHERE kind=%s AND payload->>'owner_id'=%s ORDER BY updated_at DESC LIMIT 50",(record_kind(KIND),owner_id())).fetchall()
     return [{k:s[k] for k in ('session_id','title','context','status','updated_at')} for s in (row['payload'] for row in rows)]
 
 
 def start(request:AssistantStart):
     tasks.require_database()
-    identity='assistant_'+digest([OWNER_ID,request.event_id])[:32]
+    identity='assistant_'+digest([owner_id(),request.event_id])[:32]
     signature=digest(request.model_dump())
     with database.connect() as c,c.transaction():
         c.execute('SELECT pg_advisory_xact_lock(hashtext(%s))',(identity,))
-        old=c.execute('SELECT payload FROM kltn_app.records WHERE kind=%s AND record_id=%s',(KIND,identity)).fetchone()
+        old=c.execute('SELECT payload FROM kltn_app.records WHERE kind=%s AND record_id=%s',(record_kind(KIND),identity)).fetchone()
         if old:
             if old['payload']['start_digest']!=signature:raise RevisionConflict('Mã tạo phiên đã dùng cho nguồn khác')
             return public(old['payload'])
@@ -65,7 +66,7 @@ def start(request:AssistantStart):
             job=get_posting(request.posting_id)
             if job is None:raise LookupError('Không tìm thấy công việc')
             context.update(job_hash=job.content_hash,job_title=job.title)
-        session=dict(schema_version=1,session_id=identity,owner_id=OWNER_ID,title='Cuộc trò chuyện mới',
+        session=dict(schema_version=1,session_id=identity,owner_id=owner_id(),title='Cuộc trò chuyện mới',
             version=1,status='ready',context=context,start_digest=signature,events={},processed_tasks=[],pending=None,
             messages=[dict(role='assistant',text='Chào bạn! Mình có thể giải đáp cách viết CV, cùng bạn tạo CV mới qua trò chuyện hoặc rà soát CV đã có. Bạn đang muốn chuẩn bị gì?' ,created_at=utc_now())],
             model=settings.assistant_model,prompt_version=PROMPT_VERSION,created_at=utc_now(),updated_at=utc_now())
@@ -97,25 +98,27 @@ def message(key,request:AssistantMessage):
 
 
 def choose_intent(text,context,history=None,intake=None):
-    recent=[{'role':m['role'],'content':m.get('text','')[:1400]} for m in (history or [])][-12:]
-    def compact(value):
-        if isinstance(value,dict):return {k:compact(v) for k,v in value.items() if v not in (None,'',[],{})}
-        if isinstance(value,list):return [compact(v) for v in value]
-        return value
-    state=compact(intake) if intake else None
-    expected=None
-    dialogue=None
-    if intake:
-        from backend.app.services.assistant_intake import missing_fields
-        from backend.app.services.assistant_answers import answer_context
-        current_path=(missing_fields(intake) or ['complete'])[0]
-        state['current_step']=current_path
-        expected=answer_context(intake['profile'],current_path)
-        from backend.app.services.assistant_dialogue import dialogue_context
-        dialogue=dialogue_context(intake,(missing_fields(intake) or ['complete'])[0],history)
+    direct = quick_decision(text, intake)
+    if direct:
+        return direct
+    recent, payload = routing_payload(text, context, history, intake)
     report('intent','Đang đọc câu hỏi và thông tin trong cuộc trò chuyện')
     with llm_deadline(120):
-        return request_structured([{'role':'system','content':SYSTEM},*recent,{'role':'user','content':'Ngữ cảnh hội thoại (dữ liệu tham khảo):\n'+json.dumps({'language':context['language'],'has_cv':bool(context.get('cv_id')),'has_profile':bool(context.get('profile_id')),'has_job':bool(context.get('posting_id')),'cv_intake':state,'expected_answer':expected,'dialogue_context':dialogue},ensure_ascii=False)+'\n\nTIN NHẮN HIỆN TẠI CẦN XỬ LÝ:\n'+text}],IntentDecision,task='assistant')
+        messages = [
+            {'role':'system','content':CHAT_SYSTEM}, *recent,
+            {'role':'user','content':'Ngữ cảnh:\n'+json.dumps(payload, ensure_ascii=False, separators=(',', ':'))
+                +'\nTIN NHẮN HIỆN TẠI:\n'+text},
+        ]
+        schema = ChatDecision if intake else StandaloneChatDecision
+        result = request_structured(messages, schema, task='assistant')
+        try:
+            decision = expand_decision(result, text)
+        except SourceMismatch:
+            from backend.app.services.assistant_grounding import recover_sources
+            decision = recover_sources(result,text,request_structured)
+    from backend.app.services.assistant_intake import validated_signal
+    decision.intake_signal = validated_signal(decision.intake_signal, text) if intake else None
+    return decision
 
 
 def require_context(context,intent):
@@ -172,14 +175,14 @@ def dispatch(intent,session,task_id):
             draft['presentation']=deepcopy(source.get('presentation') or Presentation().model_dump())
             draft.update(source_cv_id=context['cv_id'],source_posting_id=context.get('posting_id'))
             lineage=version_status(context['cv_id'],source)
-        return dict(type='cv_draft',cv_version=lineage,agent_model=settings.cv_model,agent_prompt_version=CV_PROMPT_VERSION,cv_session_id=result.session_id,text='Đã chuẩn bị bản nháp và nhận xét từ nội dung nguồn. Mở editor để kiểm tra, áp dụng đề xuất và xác nhận bản CV; hồ sơ nguồn chưa thay đổi.',resume_id=resume_id,href='/workspace/resumes/'+resume_id+'/edit',review=result.review.model_dump(mode='json'),_draft=draft)
+        return dict(type='cv_draft',cv_version=lineage,agent_model=settings.model_for_task('cv'),agent_prompt_version=CV_PROMPT_VERSION,cv_session_id=result.session_id,text='Đã chuẩn bị bản nháp và nhận xét từ nội dung nguồn. Mở editor để kiểm tra, áp dụng đề xuất và xác nhận bản CV; hồ sơ nguồn chưa thay đổi.',resume_id=resume_id,href='/workspace/resumes/'+resume_id+'/edit',review=result.review.model_dump(mode='json'),_draft=draft)
     return dict(type='clarification',text='Bạn muốn rà soát CV, xem độ phù hợp với JD hay bổ sung hồ sơ?')
 
 
 def run_message(task_id,payload):
     session=read(payload['session_id'])
     if task_id in session['processed_tasks']:return {'session_id':session['session_id'],'version':session['version']}
-    if session['model']!=settings.assistant_model or session['prompt_version'] not in {PROMPT_VERSION,'assistant-router-v2'}:raise RevisionConflict('Cấu hình trợ lý đã đổi. Tạo cuộc trò chuyện mới để tiếp tục.')
+    if session['model']!=settings.assistant_model or session['prompt_version'] not in {PROMPT_VERSION,'assistant-conversation-v4','assistant-router-v2'}:raise RevisionConflict('Cấu hình trợ lý đã đổi. Tạo cuộc trò chuyện mới để tiếp tục.')
     pending=session['pending']
     if not pending or pending['task_id']!=task_id or session['version']!=payload['request_version']:raise RevisionConflict('Tác vụ không còn thuộc lượt hiện tại')
     context=session['context']
@@ -195,7 +198,10 @@ def run_message(task_id,payload):
         intake = upgrade_lists(intake)
         session['cv_intake'] = intake
     bound=contextual_answer(intake['profile'],(missing_fields(intake) or ['complete'])[0],pending['text']) if intake else None
-    if pending['intent']:
+    from backend.app.services.labor_law_router import is_law_question
+    if pending['intent']=='labor_law' or (pending['intent'] is None and is_law_question(pending['text'])):
+        decision=IntentDecision(intent='labor_law')
+    elif pending['intent']:
         decision=IntentDecision(intent=pending['intent'])
     elif (signal := direct_signal(session.get('cv_intake'), pending['text'], session['messages'][:-1])):
         decision=IntentDecision(intent='build_cv',intake_signal=signal)
@@ -206,10 +212,14 @@ def run_message(task_id,payload):
     if session.get('cv_intake') and (decision.updates or decision.intake_signal) and decision.intent in {'advice','clarify'}:
         decision.intent='build_cv'
     missing=require_context(context,decision.intent)
-    if missing:result=dict(type='guidance',text=missing,href='/workspace/resumes')
+    if decision.intent=='labor_law':
+        from ai.rag.labor_law import answer as law_answer
+        result=law_answer(pending['text'])
+    elif missing:result=dict(type='guidance',text=missing,href='/workspace/resumes')
     elif decision.intent in {'build_cv','prepare_cv'}:
         report('collect','Đang cập nhật bản nháp và kiểm tra phần thông tin còn thiếu')
-        result=collect(session,decision,pending['text'],task_id,polish_with_model=True)
+        result=collect(session,decision,pending['text'],task_id,
+            polish_with_model=bool(decision.intake_signal and decision.intake_signal.kind=='write_bullets'))
     elif decision.intent=='advice':
         result=dict(type='advice',text=decision.reply.strip() or 'Mình có thể giúp bạn viết nội dung CV, chọn mẫu hoặc cùng thu thập thông tin để tạo một bản CV mới. Bạn đang cần hỗ trợ phần nào?')
     elif decision.intent=='clarify':result=dict(type='clarification',text=decision.clarification or decision.reply or 'Bạn muốn hỏi cách viết CV hay bắt đầu tạo một bản CV mới?')

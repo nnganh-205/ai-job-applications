@@ -1,16 +1,17 @@
 .workspace-layout:has(.resume-compose:not(.resume-compose-embedded)) {
-  display: block;
-  max-width: none;
+  display: grid;
+  grid-template-columns: 228px minmax(0, 1fr);
+  max-width: 1600px;
+  margin: 0 auto;
   min-height: calc(100dvh - 78px);
 }
-.workspace-layout:has(.resume-compose:not(.resume-compose-embedded))
-  > .workspace-sidebar,
 .workspace-layout:has(.resume-compose:not(.resume-compose-embedded))
   ~ .workspace-footer {
   display: none;
 }
 .workspace-content:has(.resume-compose:not(.resume-compose-embedded)) {
-  padding: 0 !important;
+  min-width: 0;
+  padding: 18px 22px 40px !important;
 }
 .workspace-content > main.resume-compose {
   max-width: none;
@@ -18,6 +19,15 @@
   padding: 0;
   border: 0;
   background: #f6f7fc;
+  border-radius: 18px;
+  overflow: clip;
+}
+.workspace-layout:has(.resume-compose-profile-update) {
+  grid-template-columns: 228px minmax(0, 1fr);
+}
+@media (max-width: 780px) {
+  .workspace-layout:has(.resume-compose:not(.resume-compose-embedded)) { display: block; }
+  .workspace-content:has(.resume-compose:not(.resume-compose-embedded)) { padding: 12px !important; }
 }
 .resume-compose button {
   display: inline-flex;
@@ -138,13 +148,20 @@
   border-radius: 50%;
 }
 .compose-layout {
-  max-width: 1360px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 28px;
+  padding: 22px;
   display: grid;
-  grid-template-columns: 290px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
+}
+.compose-layout-contact, .compose-layout-summary {
+  grid-template-columns: minmax(0, 1fr);
+}
+.compose-layout-contact > .compose-sidebar,
+.compose-layout-summary > .compose-sidebar {
+  display: none;
 }
 .compose-sidebar {
   background: #fff;
@@ -1140,3 +1157,50 @@
   align-items: center;
   gap: 7px;
 }
+
+/* Suggestions sit with their source, without a separate writer panel. */
+.writer-refinement { width: 100%; min-width: 0; }
+.writer-refinement .writer-source-list { display: grid; gap: 18px; }
+.writer-refinement .writer-source-line { min-width: 0; }
+.writer-refinement .writer-source-line > p { margin: 0; white-space: pre-wrap; }
+.writer-refinement .writer-inline-suggestions { margin: 6px 0 14px; }
+.writer-inline-suggestion {
+  margin: 8px 0 12px;
+  padding: 4px 0 4px 14px;
+  border-left: 2px solid #b7a3eb;
+  background: transparent;
+}
+.writer-inline-kicker { display: block; color: #7654b7; font-size: 11px; font-weight: 600; margin-bottom: 5px; }
+.writer-refinement .writer-suggestion-choice {
+  display: flex !important; flex-direction: row !important; align-items: flex-start;
+  gap: 9px; margin: 0; color: #46506b; font-size: 13px; font-weight: 400; line-height: 1.8;
+}
+.writer-suggestion-choice span { white-space: pre-wrap; overflow-wrap: anywhere; }
+.writer-refinement .writer-suggestion-choice input[type="checkbox"] {
+  appearance: auto; width: 15px; height: 15px; flex: 0 0 15px; margin: 5px 0 0; accent-color: #7654b7;
+}
+.writer-inline-actions { display: flex; flex-wrap: wrap; gap: 14px; margin: 5px 0 0 24px; }
+.writer-refinement .writer-inline-actions button, .writer-refinement .writer-undo button {
+  min-height: 30px; padding: 3px 0; background: transparent; border: 0; box-shadow: none;
+  color: #7654b7; font-size: 11px; text-decoration: underline; text-underline-offset: 3px;
+}
+.writer-refinement .writer-inline-actions button:last-child { color: #8790a2; }
+.writer-inline-options { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.writer-inline-options label { flex: 1; min-width: 145px; font-size: 11px; color: #748097; }
+.writer-inline-options select { width: 100%; margin-top: 5px; font-size: 12px; }
+.writer-inline-notes { margin-top: 12px; }
+.writer-inline-notes summary { color: #8790a2; font-size: 11px; cursor: pointer; }
+.writer-inline-notes label { display: grid; gap: 5px; margin: 12px 0; font-size: 12px; }
+.writer-inline-status { margin-top: 12px; }
+.writer-inline-status details { color: #748097; font-size: 12px; margin: 8px 0; }
+.writer-inline-status small { line-height: 1.8; }
+.writer-refinement .writer-result-actions { flex-wrap: wrap; margin-top: 12px; }
+@media (max-width: 600px) {
+  .writer-refinement .writer-toolbar { align-items: flex-start; }
+  .writer-refinement .writer-toolbar > span { max-width: 48%; }
+  .writer-inline-options { flex-direction: column; }
+  .writer-inline-suggestion { padding-left: 10px; }
+}
+.cv-wording-panel { border: 0; border-radius: 0; padding: 0; background: transparent; }
+
+.writer-refinement .writer-toolbar, .compose-editor-footer { justify-content: flex-end; }

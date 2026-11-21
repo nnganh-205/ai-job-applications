@@ -2,6 +2,8 @@
 from copy import deepcopy
 from uuid import uuid4
 from typing import Literal
+import re
+from collections import Counter
 from pydantic import Field
 from backend.app.schemas.profile import StrictModel
 from backend.app.schemas.cv import CVDocument
@@ -17,6 +19,7 @@ class ResumeWriterRequest(StrictModel):
     entry_id: str
     style: str = 'professional'
     count: int = Field(default=4,ge=1,le=6)
+    issues: list[Literal['action','pronoun','punctuation','length','specific']] = Field(default_factory=list,max_length=5)
 
 class ResumeWriterApply(StrictModel):
     expected_version: int = Field(ge=1)
@@ -39,7 +42,7 @@ def preview(key,request):
         refs=' '.join(bullet['source_refs'])
         target=tools if any('/'+field+'/' in refs for field in ('technologies','technologies_used','items')) else results if any('/'+field+'/' in refs for field in ('outcomes','achievements','academic_achievements')) else work
         target.append(bullet['text'])
-    result=write_bullets(WriterRequest(section=request.section,entry=dict(role=entry['title'],company=entry.get('subtitle')),text='\n'.join(work),tools='\n'.join(tools),results='\n'.join(results),style=request.style,count=request.count))
+    result=write_bullets(WriterRequest(section=request.section,entry=dict(role=entry['title'],company=entry.get('subtitle')),text='\n'.join(work),tools='\n'.join(tools),results='\n'.join(results),style=request.style,count=request.count,issues=request.issues))
     with locked(key) as connection:
         current=resumes.read(key,connection)
         if current['version']!=request.expected_version: raise RevisionConflict('CV đã thay đổi trong lúc AI viết. Tạo lại đề xuất.')
@@ -60,22 +63,28 @@ def apply(key,request):
         # Each writer fact representing work maps back to the exact input bullet(s).
         original=entry['bullets']
         all_refs=list(dict.fromkeys(ref for b in original for ref in b['source_refs']))
-        proposed=[];replaced=set()
+        proposed=[];replaced=set();insertions={}
         for i in selected:
             bullet=pending['result']['bullets'][i]
-            quotes={q.strip().lstrip('•*- ') for q in bullet['sources']}
-            matched=[j for j,old in enumerate(original) if old['text'].strip().lstrip('•*- ') in quotes]
+            normalize=lambda text: re.sub(r'^(?:[•*]\s*|-\s+|\d+[.)]\s+)', '', text.strip())
+            quotes=Counter(normalize(q) for q in bullet['sources'])
+            matched=[]
+            for j,old in enumerate(original):
+                text=normalize(old['text'])
+                if j not in replaced and quotes[text]:
+                    matched.append(j);quotes[text]-=1
             replaced.update(matched)
             refs=list(dict.fromkeys(ref for j in matched for ref in original[j]['source_refs']))
             # Old preview packets may not contain a per-fact quote mapping.
-            proposed.append(dict(text=bullet['text'],source_refs=refs or all_refs))
+            replacements=[dict(text=text,source_refs=refs or all_refs) for text in (bullet.get('replacement_lines') or [bullet['text']])]
+            proposed.extend(replacements)
+            insertions.setdefault(min(matched) if matched else None, []).extend(replacements)
         if request.mode=='append':
             proposed=deepcopy(original)+[b for b in proposed if b['text'] not in {old['text'] for old in original}]
         elif replaced:
             # Selecting one rewrite must not delete other bullets or overflow facts.
-            first=min(replaced)
             proposed=[b for j,old in enumerate(original)
-                      for b in (proposed if j==first else [] if j in replaced else [deepcopy(old)])]
+                      for b in (insertions[j] if j in insertions else [] if j in replaced else [deepcopy(old)])] + insertions.get(None, [])
         else:
             # Old packets without exact quote mapping can only add, not erase.
             proposed=deepcopy(original)+[b for b in proposed if b['text'] not in {old['text'] for old in original}]

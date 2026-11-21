@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { request } from "../../services/api.js";
+import { request } from "../../lib/api.js";
 import Icon from "../../components/ui/Icon.jsx";
 import PageHeading from "../../components/ui/PageHeading.jsx";
 import {EmptyState} from "../../components/ui/PageState.jsx";
@@ -20,7 +20,7 @@ export default function ApplicationsPage() {
   }, []);
   return (
     <main className="applications-page">
-      <PageHeading eyebrow="THEO DÕI HÀNH TRÌNH" title="Mỗi cơ hội, một bước tiến." action={<Link className="button-link" to="/jobs"><Icon name="search" size={16}/> Khám phá việc làm</Link>}>Giữ những công việc bạn quan tâm và theo dõi từng bước ứng tuyển. Trạng thái do bạn xác nhận.</PageHeading>
+      <PageHeading eyebrow="THEO DÕI HÀNH TRÌNH" title="Theo dõi ứng tuyển" action={<Link className="button-link" to="/jobs"><Icon name="search" size={16}/> Khám phá việc làm</Link>}>Giữ những công việc bạn quan tâm và theo dõi từng bước ứng tuyển. Trạng thái do bạn xác nhận.</PageHeading>
       <div className="application-filters" role="group" aria-label="Lọc trạng thái"><button aria-pressed={filter==='all'} onClick={()=>setFilter('all')}>Tất cả <span>{items?.length||0}</span></button>{Object.entries(statusNames).filter(([key])=>items?.some(a=>a.status===key)).map(([key,name])=><button key={key} aria-pressed={filter===key} onClick={()=>setFilter(key)}>{name} <span>{items.filter(a=>a.status===key).length}</span></button>)}</div>
       {error && (
         <p role="alert" className="error">

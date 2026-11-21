@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { request } from "../services/api.js";
+import { request } from "../lib/api.js";
 
 export default function CVVersionNotice({
   cvId,

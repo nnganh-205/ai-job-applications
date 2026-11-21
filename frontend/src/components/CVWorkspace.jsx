@@ -1,3 +1,4 @@
+import { accountStorage } from "../lib/accountStorage.js";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -6,8 +7,8 @@ import {
   waitTask,
   retryTask,
   taskLabel,
-} from "../services/tasks.js";
-import { request } from "../services/api.js";
+} from "../lib/tasks.js";
+import { request, authenticatedFetch } from "../lib/api.js";
 
 export default function CVWorkspace({
   profileId,
@@ -39,8 +40,8 @@ export default function CVWorkspace({
     const controller = new AbortController();
     discovery.current = controller;
     try {
-      setSavedSession(localStorage.getItem(scope + ".session") || "");
-      setSavedTask(localStorage.getItem(scope + ".task") || "");
+      setSavedSession(accountStorage.getItem(scope + ".session") || "");
+      setSavedTask(accountStorage.getItem(scope + ".task") || "");
     } catch {}
     setTask(null);
     if (selectedProfile)
@@ -96,7 +97,7 @@ export default function CVWorkspace({
     setTemplate(data.template);
     setPreview("");
     try {
-      localStorage.setItem(scope + ".session", data.session_id);
+      accountStorage.setItem(scope + ".session", data.session_id);
       setSavedSession(data.session_id);
     } catch {
       /* ID only. */
@@ -148,8 +149,8 @@ export default function CVWorkspace({
       }
       let key;
       try {
-        key = localStorage.getItem(scope + ".request") || crypto.randomUUID();
-        localStorage.setItem(scope + ".request", key);
+        key = accountStorage.getItem(scope + ".request") || crypto.randomUUID();
+        accountStorage.setItem(scope + ".request", key);
       } catch {
         key = crypto.randomUUID();
       }
@@ -166,8 +167,8 @@ export default function CVWorkspace({
       setSavedTask(created.task_id);
       setTask(created);
       try {
-        localStorage.setItem(scope + ".task", created.task_id);
-        localStorage.removeItem(scope + ".request");
+        accountStorage.setItem(scope + ".task", created.task_id);
+        accountStorage.removeItem(scope + ".request");
       } catch {}
       await resumeTask(created.task_id);
     });
@@ -208,7 +209,7 @@ export default function CVWorkspace({
   }
   function showPreview() {
     run(async () => {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `/api/cv/sessions/${session.session_id}/preview`,
         {
           method: "POST",
@@ -325,7 +326,7 @@ export default function CVWorkspace({
       )}
       {!selectedProfile && (
         <p className="notice">
-          Hãy tải CV lên hoặc tạo CV từ form / trò chuyện trong Thư viện CV trước.
+          Hãy tải CV lên hoặc tạo CV từ form / trò chuyện trong Tổng quan trước.
         </p>
       )}
       {busy && (

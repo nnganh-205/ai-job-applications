@@ -13,7 +13,7 @@ from backend.app.db import workflow_repository as records
 from backend.app.db.job_posting_repository import utc_now
 
 MAX_UPLOAD=5*1024*1024
-OWNER_ID=os.getenv('WORKSPACE_OWNER_ID','local-demo')
+from backend.app.core.workspace import owner_id
 
 
 def storage():return Path(os.getenv('KLTN_ASSET_STORAGE',str(PROJECT_ROOT/'backend/storage/assets')))
@@ -41,7 +41,7 @@ def save_photo(content):
         try:os.link(temporary,path)
         except FileExistsError:pass
     finally:temporary.unlink(missing_ok=True)
-    meta={'asset_id':asset_id,'checksum':checksum,'width':result.width,'height':result.height,'mime':'image/png','owner_id':OWNER_ID,'created_at':utc_now()}
+    meta={'asset_id':asset_id,'checksum':checksum,'width':result.width,'height':result.height,'mime':'image/png','owner_id':owner_id(),'created_at':utc_now()}
     records.put('assets',asset_id,meta)
     return meta
 
@@ -49,7 +49,7 @@ def save_photo(content):
 def read_photo(asset_id):
     if not re.fullmatch(r'asset_[a-f0-9]{64}',asset_id):raise ValueError('ID ảnh không hợp lệ')
     meta=records.get('assets',asset_id)
-    if meta is None or meta.get('owner_id')!=OWNER_ID:raise LookupError('Không tìm thấy ảnh của workspace')
+    if meta is None or meta.get('owner_id')!=owner_id():raise LookupError('Không tìm thấy ảnh của workspace')
     path=storage()/(asset_id+'.png')
     if not path.is_file():raise LookupError('File ảnh không còn trong storage')
     data=path.read_bytes()

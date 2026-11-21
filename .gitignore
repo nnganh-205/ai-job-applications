@@ -27,8 +27,9 @@ backend/storage/jobs/*
 !backend/storage/jobs/.gitkeep
 
 # Private runtime documents and local verification artifacts.
-data/documents/cv/
 output/evaluation/
+output/archives/
+output/logs/
 frontend/.vite/
 backend/storage/matches/
 backend/storage/workflows/
@@ -37,3 +38,17 @@ backend/storage/assets/
 
 # Separate private human review progress and exports.
 ai/data/reviews/
+
+# Local account database and one-time generated administrator credentials.
+backend/storage/accounts.sqlite3*
+backend/storage/admin-bootstrap.json
+
+# Local agent state, private reference CVs, and thesis artifacts.
+.opencode/
+.env.*
+!.env.example
+ai/3.pdf
+output/reports/
+output/diagrams/
+output/reviews/
+output/PROJECT_CONTEXT.md

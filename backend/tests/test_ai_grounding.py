@@ -48,7 +48,7 @@ class AIGroundingTests(unittest.TestCase):
         class Response:
             def raise_for_status(self):pass
             def json(self):return {'message':{'content':'{}'},'done':True,'done_reason':'length'}
-        with patch('ai.llm.ollama_client.httpx.post',return_value=Response()):
+        with patch('ai.llm.ollama_client._client.post',return_value=Response()):
             with self.assertRaises(OllamaResponseError):request_structured([],CompactJD,task='jd')
 
     def test_preferred_clause_does_not_relabel_mandatory_experience(self):

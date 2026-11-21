@@ -1,0 +1,180 @@
+{
+  "contact": {
+    "full_name": "Nguyễn Minh An",
+    "headline": "AI ENGINEER",
+    "date_of_birth": null,
+    "gender": null,
+    "email": "minhan@example.com",
+    "phone": "090 000 0000",
+    "location": "Hà Nội, Việt Nam",
+    "linkedin": null,
+    "github": null,
+    "website": null,
+    "portfolio_url": null,
+    "country": null,
+    "city": null,
+    "state_or_province": null
+  },
+  "experience": [
+    {
+      "id": "preview-exp-0",
+      "job_title": "AI Engineer",
+      "role": null,
+      "company": "Công ty Công nghệ Minh Họa",
+      "employment_type": null,
+      "location": null,
+      "start_date": "01/2025",
+      "end_date": "Nay",
+      "is_current": true,
+      "description": [
+        "Xây dựng mô hình phân loại văn bản phục vụ thử nghiệm nội bộ.",
+        "Thiết kế quy trình huấn luyện bằng PyTorch và theo dõi kết quả trên tập xác thực.",
+        "Phối hợp chuẩn hóa dữ liệu và kiểm tra chất lượng nhãn."
+      ],
+      "responsibilities": [],
+      "achievements": [],
+      "technologies_used": [],
+      "original_bullets": []
+    },
+    {
+      "id": "preview-exp-1",
+      "job_title": "Junior AI Engineer",
+      "role": null,
+      "company": "Công ty Phần mềm Minh Họa",
+      "employment_type": null,
+      "location": null,
+      "start_date": "07/2024",
+      "end_date": "12/2024",
+      "is_current": false,
+      "description": [
+        "Phát triển chatbot trả lời câu hỏi dựa trên tài liệu hướng dẫn.",
+        "Xây dựng API cho mô hình xử lý ngôn ngữ tự nhiên.",
+        "Viết kiểm thử và ghi nhận lỗi trong quá trình tích hợp."
+      ],
+      "responsibilities": [],
+      "achievements": [],
+      "technologies_used": [],
+      "original_bullets": []
+    },
+    {
+      "id": "preview-exp-2",
+      "job_title": "Thực tập sinh Machine Learning",
+      "role": null,
+      "company": "Phòng nghiên cứu Minh Họa",
+      "employment_type": null,
+      "location": null,
+      "start_date": "01/2024",
+      "end_date": "06/2024",
+      "is_current": false,
+      "description": [
+        "Hỗ trợ làm sạch dữ liệu và chuẩn bị tập dữ liệu thực nghiệm.",
+        "Thử nghiệm các thuật toán phân loại cơ bản và tổng hợp báo cáo."
+      ],
+      "responsibilities": [],
+      "achievements": [],
+      "technologies_used": [],
+      "original_bullets": []
+    }
+  ],
+  "project": [
+    {
+      "id": "preview-project",
+      "project_name": "Trợ lý tra cứu tài liệu minh họa",
+      "role": "AI Engineer",
+      "technologies": [],
+      "project_type": null,
+      "start_date": "2025",
+      "end_date": "2025",
+      "description": [
+        "Xây dựng giao diện tra cứu và API xử lý câu hỏi.",
+        "Tích hợp mô hình ngôn ngữ với cơ chế truy xuất tài liệu.",
+        "Đánh giá kết quả bằng bộ câu hỏi thử nghiệm."
+      ],
+      "objectives": [],
+      "responsibilities": [],
+      "contributions": [],
+      "outcomes": [],
+      "original_bullets": [],
+      "github_url": null,
+      "demo_url": null,
+      "project_url": null
+    }
+  ],
+  "education": [
+    {
+      "id": "preview-education",
+      "institution": "Đại học Minh Họa",
+      "degree": "Cử nhân Công nghệ thông tin",
+      "field_of_study": null,
+      "major": null,
+      "start_date": "2023",
+      "end_date": "2027",
+      "graduation_date": null,
+      "gpa": "3.6/4.0",
+      "gpa_scale": null,
+      "details": [
+        "Đồ án: Xây dựng trợ lý tra cứu tài liệu.",
+        "Tham gia câu lạc bộ công nghệ và các hoạt động nghiên cứu sinh viên."
+      ],
+      "academic_achievements": [],
+      "relevant_coursework": [],
+      "original_description": null
+    }
+  ],
+  "involvement": [],
+  "skills": [
+    {
+      "id": "preview-skills",
+      "group": "Chuyên môn",
+      "items": [
+        "Machine Learning Algorithms (Linear Regression, SVM, Decision Trees…)",
+        "Deep Learning (CNN, RNN, Transformers)",
+        "Natural Language Processing (NLP)",
+        "Python (NumPy, pandas, scikit-learn, matplotlib)",
+        "SQL",
+        "Azure ML",
+        "AWS (SageMaker, EC2)"
+      ],
+      "normalized_items": [
+        "machine learning algorithms (linear regression, svm, decision trees…)",
+        "deep learning (cnn, rnn, transformers)",
+        "natural language processing (nlp)",
+        "python (numpy, pandas, scikit-learn, matplotlib)",
+        "sql",
+        "azure ml",
+        "aws (sagemaker, ec2)"
+      ]
+    }
+  ],
+  "summary": "Kỹ sư AI quan tâm đến xử lý ngôn ngữ tự nhiên và phát triển ứng dụng web. Có kinh nghiệm thực hành xây dựng mô hình, chuẩn bị dữ liệu và tích hợp API qua các dự án minh họa.",
+  "certifications": [
+    {
+      "id": "demo-cert",
+      "name": "Khóa học học máy ứng dụng",
+      "issuer": "Nền tảng đào tạo Minh Họa",
+      "date": "2025",
+      "description": []
+    }
+  ],
+  "awards": [
+    {
+      "id": "demo-award",
+      "title": "Giải dự án sinh viên minh họa",
+      "organization": "Đại học Minh Họa",
+      "date": "2025",
+      "description": []
+    }
+  ],
+  "references": [
+    {
+      "id": "demo-reference",
+      "full_name": "Trần Minh Bình",
+      "position": "Người hướng dẫn minh họa",
+      "organization": "Công ty Công nghệ Minh Họa",
+      "email": "huongdan@example.org",
+      "phone": "000 000 0000",
+      "relationship": "Người hướng dẫn dự án minh họa",
+      "description": []
+    }
+  ]
+}

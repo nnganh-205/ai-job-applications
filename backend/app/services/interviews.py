@@ -16,7 +16,7 @@ from ai.prompts.interview_prompt import PROMPT_VERSION,SYSTEM
 from ai.llm.ollama_client import request_structured,llm_deadline,OllamaSchemaError
 from backend.app.core.config import settings
 
-OWNER_ID=os.getenv('WORKSPACE_OWNER_ID','local-demo')
+from backend.app.core.workspace import owner_id, record_kind
 KIND='interviews'
 
 
@@ -28,8 +28,8 @@ def read(session_id,*,connection=None):
     if connection is None:
         tasks.require_database()
         with database.connect() as c:return read(session_id,connection=c)
-    row=connection.execute('SELECT payload FROM kltn_app.records WHERE kind=%s AND record_id=%s',(KIND,session_id)).fetchone()
-    if row is None or row['payload']['owner_id']!=OWNER_ID:raise LookupError('Không tìm thấy phiên phỏng vấn')
+    row=connection.execute('SELECT payload FROM kltn_app.records WHERE kind=%s AND record_id=%s',(record_kind(KIND),session_id)).fetchone()
+    if row is None or row['payload']['owner_id']!=owner_id():raise LookupError('Không tìm thấy phiên phỏng vấn')
     return row['payload']
 
 
@@ -40,7 +40,7 @@ def public(session):
 def recent():
     tasks.require_database()
     with database.connect() as c:
-        rows=c.execute("SELECT payload FROM kltn_app.records WHERE kind=%s AND payload->>'owner_id'=%s ORDER BY updated_at DESC LIMIT 50",(KIND,OWNER_ID)).fetchall()
+        rows=c.execute("SELECT payload FROM kltn_app.records WHERE kind=%s AND payload->>'owner_id'=%s ORDER BY updated_at DESC LIMIT 50",(record_kind(KIND),owner_id())).fetchall()
     return [dict(session_id=s['session_id'],status=s['status'],version=s['version'],cv_id=s['cv_id'],posting_id=s['posting_id'],job_title=s['job_title'],language=s['language'],answered=sum(t.get('answer') is not None for t in s['turns']),question_count=s['question_count'],updated_at=s['updated_at']) for s in (row['payload'] for row in rows)]
 
 
@@ -67,11 +67,11 @@ def enqueue(session,operation,answer,c):
 
 def start(request:InterviewStart):
     tasks.require_database()
-    identity='interview_'+digest([OWNER_ID,request.event_id])[:32]
+    identity='interview_'+digest([owner_id(),request.event_id])[:32]
     request_hash=digest(request.model_dump())
     with database.connect() as c,c.transaction():
         c.execute('SELECT pg_advisory_xact_lock(hashtext(%s))',(identity,))
-        previous=c.execute('SELECT payload FROM kltn_app.records WHERE kind=%s AND record_id=%s',(KIND,identity)).fetchone()
+        previous=c.execute('SELECT payload FROM kltn_app.records WHERE kind=%s AND record_id=%s',(record_kind(KIND),identity)).fetchone()
         if previous:
             if previous['payload']['start_digest']!=request_hash:raise RevisionConflict('Mã tạo phiên đã dùng với lựa chọn khác')
             return public(previous['payload'])
@@ -84,12 +84,12 @@ def start(request:InterviewStart):
         if not text.strip():raise ValueError('CV chưa có nội dung để luyện tập')
         warnings=[]
         if len(text)>14000 or len(job.description)>14000:warnings.append('CV/JD dài: câu hỏi chỉ dùng 14.000 ký tự đầu mỗi tài liệu.')
-        session=dict(schema_version=1,session_id=identity,owner_id=OWNER_ID,cv_id=request.cv_id,
+        session=dict(schema_version=1,session_id=identity,owner_id=owner_id(),cv_id=request.cv_id,
             profile_revision_id=document.source_profile_revision_id,posting_id=request.posting_id,
             job_content_hash=job.content_hash,job_title=job.title,language=request.language,
             question_count=request.question_count,version=1,status='processing',turns=[],pending=None,
             source={'cv':text[:14000],'jd':job.description[:14000]},start_digest=request_hash,events={},processed_tasks=[],
-            prompt_version=PROMPT_VERSION,model=settings.interview_model,warnings=warnings,report=None,created_at=now(),updated_at=now())
+            prompt_version=PROMPT_VERSION,model=settings.model_for_task('interview'),provider=settings.provider_for_task('interview'),warnings=warnings,report=None,created_at=now(),updated_at=now())
         return enqueue(session,'question',None,c)
 
 
@@ -167,7 +167,7 @@ def run_turn(task_id,payload):
     from backend.app.services.ai_progress import report as progress
     session=read(payload['session_id'])
     if task_id in session['processed_tasks']:return {'session_id':session['session_id'],'version':session['version']}
-    if session['model']!=settings.interview_model or session['prompt_version']!=PROMPT_VERSION:raise RevisionConflict('Cấu hình AI đã thay đổi; tạo phiên mới để giữ nhất quán.')
+    if session['model']!=settings.model_for_task('interview') or session.get('provider','ollama')!=settings.provider_for_task('interview') or session['prompt_version']!=PROMPT_VERSION:raise RevisionConflict('Cấu hình AI đã thay đổi; tạo phiên mới để giữ nhất quán.')
     pending=session['pending']
     if not pending or pending['task_id']!=task_id or session['version']!=payload['request_version']:raise RevisionConflict('Tác vụ không còn thuộc lượt hiện tại')
     segments=evidence_segments(session['source'])

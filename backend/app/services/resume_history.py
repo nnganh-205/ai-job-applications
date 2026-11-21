@@ -1,5 +1,6 @@
 """Immutable CV snapshots; restoring always creates a later version."""
 from copy import deepcopy
+from backend.app.core.workspace import record_kind
 from backend.app.db import database, workflow_repository as records
 from backend.app.db.profile_revision_repository import RevisionConflict
 from backend.app.db.job_posting_repository import utc_now
@@ -26,7 +27,7 @@ def versions(key):
     found = {h['version']:h for h in data.get('edit_history',[]) if 'document' in h and 'baseline' in h}
     if database.enabled():
         with database.connect() as c:
-            rows=c.execute("SELECT payload FROM kltn_app.records WHERE kind=%s AND payload->>'resume_id'=%s",(KIND,key)).fetchall()
+            rows=c.execute("SELECT payload FROM kltn_app.records WHERE kind=%s AND payload->>'resume_id'=%s",(record_kind(KIND),key)).fetchall()
         found.update({r['payload']['version']:r['payload'] for r in rows})
     else:
         found.update({h['version']:h for h in records.list_kind(KIND) if h.get('resume_id')==key})
